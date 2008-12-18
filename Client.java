@@ -148,10 +148,10 @@ public class Client {
 				for (String s : splittok) {
 					u.addChannel(s);
 				}
-			}
 
-			// Insert channels to DB
-			u.insertChannels();
+				// Insert channels to DB
+				u.insertChannels();
+			}
 		}
 
 		// If we're fully connected
@@ -199,10 +199,10 @@ public class Client {
 								}
 							}
 						}
-					}
 
-					// Insert modes into DB
-					u.insertModes();
+						// Insert modes into DB
+						u.insertModes();
+					}
 				}
 			}
 			// Handle nickname changes

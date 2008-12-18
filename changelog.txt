@@ -7,6 +7,7 @@
 -Fixed- Now gets IP from GETINFO not DNS resolving - Thanks Allan for pointing out the silly methodology :)
 -Fixed- Added SQL escaping
 -Fixed- Random bug whereby the server seems so send the NICK timestamp prefixed with a :
+-Fixed- Null pointer exception caused by making calls to a class instance when class assigning failed. Moved inside check if.
 
 [Version 1.0]
 Initial Release
