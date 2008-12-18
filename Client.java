@@ -229,6 +229,9 @@ public class Client {
 					u.insertNicknames();
 				}
 			}
+			else if (tokens[1].equals("KICK")) {
+				this.send(":Logger PRIVMSG #serverbans :[Kick] " + tokens[3] + " was kicked from " + tokens[2] + " by " + tokens[0].substring(1));
+			}
 			// Handle getinfo replies (raw numeric 339)
 			else if (tokens[1].equals("339")) {
 				User u = null;

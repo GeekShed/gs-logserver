@@ -2,6 +2,7 @@
 
 [18/12/2008]
 -Fixed- Grammar of "WyldRyde Do -NOT-" changed to "WyldRyde Will -NOT-"
+-Added- Logging of KICKs to #serverbans
 
 [Version 1.0]
 Initial Release
