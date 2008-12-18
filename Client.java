@@ -48,10 +48,12 @@ public class Client {
 	private Socket sock; // Link socket
 	private BufferedReader in; // Reader
 	private PrintWriter out; // Writer
-	private boolean connected = false; // Connected to link server fully?
+	private boolean connected = true; // Connected to link server fully?
 	private Vector<User> Users = new Vector<User>(100, 100); // Users on network
 	private HashMap<String, String> getInfoNick = new HashMap<String, String>(50); // Used to stop laggy servers confusing GETINFO parser
 	private Connection mysql; // Mysql connection
+	private StringBuffer sendQ = new StringBuffer(); // SendQ
+	private int qSize = 0; // SendQ Size Counter
 
 	// Constructor
 	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, Connection mysql) {
@@ -79,6 +81,7 @@ public class Client {
 		send("SERVER " + serverName + " 1 :" + serverDescription);
 		send("NICK Logger 1 " + System.currentTimeMillis() / 1000 + " logger " + serverName.toLowerCase() + " " + serverName + " 0 " + " +oANHSB * :Logger");
 		send(":" + serverName + " SWHOIS Logger :is a Network Service");
+		this.connected = false;
 	}
 
 	// Method to loop and process socket
@@ -106,6 +109,7 @@ public class Client {
 		// Last server connection process message - we're now connected fully
 		else if (tokens[0].equals("NETINFO")) {
 			connected = true;
+			sendSendQ();
 			send(":Logger JOIN #serverbans");
 		}
 		// Handle new user NICK commands
@@ -275,8 +279,27 @@ public class Client {
 
 	// Method to send data to server
 	public void send(String data) {
-		this.out.println(data);
-		System.out.println("-> " + data);
+		if (this.connected) {
+			this.out.println(data);
+			System.out.println("-> " + data);
+		}
+		else {
+			this.sendQ.append(data + "\n");
+			this.qSize++;
+
+			if (this.qSize == 10) {
+				this.sendSendQ();
+			}
+		}
+	}
+
+	// Method to send the SendQ to server
+	public void sendSendQ() {
+		this.out.println(this.sendQ.toString());
+		System.out.println("-> " + this.sendQ.toString());
+
+		this.qSize = 0;
+		this.sendQ = new StringBuffer();
 	}
 
 	// Method to get user object by nickname
