@@ -118,16 +118,8 @@ public class Client {
 			String gecos = Utils.assembleSlice(tokens, 10);
 			gecos = gecos.substring(1);
 
-			// Get the IP
-			String ip = null;
-
-			try {
-				ip = InetAddress.getByName(tokens[5]).getHostAddress();
-			}
-			catch (Exception e) {}
-
 			// Create new user object
-			User u = new User(tokens[1], tokens[4], gecos, ip, tokens[6], (tokens[9].equals("*")?tokens[5]:tokens[9]), Long.parseLong(tokens[3]), mysql);
+			User u = new User(tokens[1], tokens[4], gecos, tokens[6], (tokens[9].equals("*")?tokens[5]:tokens[9]), Long.parseLong(tokens[3]), mysql);
 
 			// Add modes
 			for (int i = 1; i < tokens[8].length(); i++) {
@@ -259,6 +251,7 @@ public class Client {
 						// If is :Remote line
 						else if (tokens[3].equals(":Remote")) {
 							u.setSPort(Integer.decode(tokens[7].substring(0, tokens[7].length() - 1))); // Set source port
+							u.setIP(tokens[5]); // Set IP
 						}
 						// If is :Flags line
 						else if (tokens[3].equals(":Flags:")) {

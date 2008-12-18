@@ -50,12 +50,11 @@ public class User {
 	private long mysqlRecordId = 0; // Mysql insert id
 
 	// Constructor
-	public User(String nick, String ident, String gecos, String ip, String server, String hostname, long timestamp, Connection mysql) {
+	public User(String nick, String ident, String gecos, String server, String hostname, long timestamp, Connection mysql) {
 		// Store data
 		this.nick = nick;
 		this.ident = ident;
 		this.gecos = gecos;
-		this.ip = ip;
 		this.server = server;
 		this.hostname = hostname;
 		this.timestamp = timestamp;
