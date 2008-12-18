@@ -316,7 +316,7 @@ public class User {
 	// Insert channels from vector into db
 	public void insertChannels() {
 		if (channels.size() > 0 && this.mysqlRecordId != 0) {
-			String sql = "INSERT INTO `channels` (`lid`, `channel`, `timestamp`) VALUES ";
+			String sql = "INSERT IGNORE INTO `channels` (`lid`, `channel`, `timestamp`) VALUES ";
 
 			// Loop vector and build query
 			for (int i = 0; i < channels.size(); i++) {
