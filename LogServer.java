@@ -3,7 +3,7 @@ WyldRyde-Logger Log Server - V1.0
 
 Main LogServer Class File
 
-WyldRyde Do -NOT- Provide Support With This Code!
+WyldRyde Will -NOT- Provide Support With This Code!
 
 Copyright (c) 2008 Phil Lavin
 All rights reserved.

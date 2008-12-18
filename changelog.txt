@@ -1,0 +1,7 @@
+[Version 1.1]
+
+[18/12/2008]
+-Fixed- Grammar of "WyldRyde Do -NOT-" changed to "WyldRyde Will -NOT-"
+
+[Version 1.0]
+Initial Release
