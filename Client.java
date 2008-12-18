@@ -216,6 +216,12 @@ public class Client {
 				else { // If all ok
 					// Change nick in user object
 					u.setNick(tokens[2]);
+
+					// "Random and unexplained bug" fix...
+					if (tokens[3].substring(0,1).equals(":")) {
+						tokens[3] = tokens[3].substring(1);
+					}
+
 					// Set last NICK timestamp
 					u.setTimestamp(Integer.parseInt(tokens[3]));
 					// Update above in logs table
