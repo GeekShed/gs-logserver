@@ -73,6 +73,46 @@ public class User {
 		this.insertNicknames();
 	}
 
+	// Methods to escape data for sql input
+	public String sqlEscape(String data) {
+		data = data.replace("\"", "\\\"");
+		data = data.replace("'", "\\'");
+		data = data.replace("`", "\\`");
+		data = data.replace("%", "\\%");
+		data = data.replace("(", "\\(");
+		data = data.replace(")", "\\)");
+
+		return data;
+	}
+
+	public String sqlEscape(int d) {
+		Integer dataint = new Integer(d);
+		String data = dataint.toString();
+
+		data = data.replace("\"", "\\\"");
+		data = data.replace("'", "\\'");
+		data = data.replace("`", "\\`");
+		data = data.replace("%", "\\%");
+		data = data.replace("(", "\\(");
+		data = data.replace(")", "\\)");
+
+		return data;
+	}
+
+	public String sqlEscape(long d) {
+		Long dataint = new Long(d);
+		String data = dataint.toString();
+
+		data = data.replace("\"", "\\\"");
+		data = data.replace("'", "\\'");
+		data = data.replace("`", "\\`");
+		data = data.replace("%", "\\%");
+		data = data.replace("(", "\\(");
+		data = data.replace(")", "\\)");
+
+		return data;
+	}
+
 	// Accessors and mutators
 	public void setMySqlRecordId(long id) {
 		this.mysqlRecordId = id;
@@ -167,7 +207,7 @@ public class User {
 
 	// Create the user record in the database
 	public void createInDB() {
-		String sql = "INSERT INTO `logs` (`nick`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + this.nick + "', '" + this.gecos + "', '" + this.server + "', '" + this.dport + "', '" + this.ip + "', '" + this.sport + "', '" + this.flags + "', '" + this.hostname + "', " + this.timestamp + ", " + this.timestamp + ")";
+		String sql = "INSERT INTO `logs` (`nick`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + sqlEscape(this.nick) + "', '" + sqlEscape(this.gecos) + "', '" + sqlEscape(this.server) + "', '" + sqlEscape(this.dport) + "', '" + sqlEscape(this.ip) + "', '" + sqlEscape(this.sport) + "', '" + sqlEscape(this.flags) + "', '" + sqlEscape(this.hostname) + "', '" + sqlEscape(this.timestamp) + "', '" + sqlEscape(this.timestamp) + "')";
 
 		// Attempt to insert into logs table
 		try {
@@ -186,7 +226,7 @@ public class User {
 			}
 			else { // If dup key error
 				// Get the ID of row causing clash and remember
-				sql = "SELECT `id` FROM `logs` WHERE `nick`='" + this.nick + "' AND `ip`='" + this.ip + "' AND `timestamp`='" + this.timestamp + "'";
+				sql = "SELECT `id` FROM `logs` WHERE `nick`='" + sqlEscape(this.nick) + "' AND `ip`='" + sqlEscape(this.ip) + "' AND `timestamp`='" + sqlEscape(this.timestamp) + "'";
 
 				try {
 					ResultSet rs = this.stmt.executeQuery(sql);
@@ -204,7 +244,7 @@ public class User {
 	public void updateInDB() {
 		if (this.mysqlRecordId != 0) {
 			// Query
-			String sql = "UPDATE `logs` SET `nick`='" + this.nick + "', `gecos`='" + this.gecos + "', `server`='" + this.server + "', `dport`='" + this.dport + "', `ip`='" + this.ip + "', `sport`='" + this.sport + "', `flags`='" + this.flags + "', `userhost`='" + this.hostname + "', `timestamp`='" + this.timestamp + "' WHERE `id`=" + this.mysqlRecordId;
+			String sql = "UPDATE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
 
 			try {
 				this.stmt.executeUpdate(sql);
@@ -222,7 +262,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < nicknames.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + nicknames.get(i) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(nicknames.get(i)) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query
@@ -248,7 +288,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < v.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + v.get(i) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(v.get(i).toString()) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query
@@ -280,7 +320,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < channels.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + channels.get(i) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(channels.get(i)) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query

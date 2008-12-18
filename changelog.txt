@@ -5,6 +5,7 @@
 -Added- Logging of KICKs to #serverbans
 -Fixed- Now creates an internal SendQ to minimize the number of packets flying across the interwebs on connect
 -Fixed- Now gets IP from GETINFO not DNS resolving - Thanks Allan for pointing out the silly methodology :)
+-Fixed- Added SQL escaping
 
 [Version 1.0]
 Initial Release
