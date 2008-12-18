@@ -1,0 +1,75 @@
+--
+-- Table structure for table `channels`
+--
+
+CREATE TABLE IF NOT EXISTS `channels` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `lid` int(10) unsigned NOT NULL,
+  `channel` varchar(64) NOT NULL,
+  `timestamp` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `logs`
+--
+
+CREATE TABLE IF NOT EXISTS `logs` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `nick` varchar(64) NOT NULL,
+  `gecos` varchar(255) NOT NULL,
+  `server` varchar(255) NOT NULL,
+  `dport` int(10) unsigned NOT NULL,
+  `ip` varchar(64) NOT NULL,
+  `sport` int(10) unsigned NOT NULL,
+  `flags` varchar(255) NOT NULL,
+  `userhost` varchar(255) NOT NULL,
+  `timestamp` int(10) unsigned NOT NULL,
+  `con_timestamp` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `nick` (`nick`,`ip`,`timestamp`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `modes_off`
+--
+
+CREATE TABLE IF NOT EXISTS `modes_off` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `lid` int(10) unsigned NOT NULL,
+  `mode` char(1) NOT NULL,
+  `timestamp` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `modes_on`
+--
+
+CREATE TABLE IF NOT EXISTS `modes_on` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `lid` int(10) unsigned NOT NULL,
+  `mode` char(1) NOT NULL,
+  `timestamp` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `nicknames`
+--
+
+CREATE TABLE IF NOT EXISTS `nicknames` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `lid` int(10) unsigned NOT NULL,
+  `nickname` varchar(64) NOT NULL,
+  `timestamp` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
