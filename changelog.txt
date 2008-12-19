@@ -9,6 +9,7 @@
 -Fixed- Random bug whereby the server seems so send the NICK timestamp prefixed with a :
 -Fixed- Null pointer exception caused by making calls to a class instance when class assigning failed. Moved inside check if.
 -Alter- Changed to only log channel joins once to avoid table getting too large
+-Added- Response to VERSION command
 
 [Version 1.0]
 Initial Release

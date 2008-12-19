@@ -156,8 +156,12 @@ public class Client {
 
 		// If we're fully connected
 		if (connected) {
+			// Handle VERSION
+			if (tokens[1].equals("VERSION")) {
+				send(":" + this.serverName + " 351 " + tokens[0].substring(1) + " WyldRyde Log Server V1.0");
+			}
 			// Handle QUITs
-			if (tokens[1].equals("QUIT")) {
+			else if (tokens[1].equals("QUIT")) {
 				// Get user id
 				int ptr = getUserIdByNick(tokens[0].substring(1));
 
