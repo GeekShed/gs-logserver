@@ -75,13 +75,13 @@ public class User {
 
 	// Methods to escape data for sql input
 	public String sqlEscape(String data) {
+		data = data.replace("\\", "\\\\");
 		data = data.replace("\"", "\\\"");
 		data = data.replace("'", "\\'");
 		data = data.replace("`", "\\`");
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
-		data = data.replace("\\", "\\\\");
 
 		return data;
 	}
@@ -90,13 +90,13 @@ public class User {
 		Integer dataint = new Integer(d);
 		String data = dataint.toString();
 
+		data = data.replace("\\", "\\\\");
 		data = data.replace("\"", "\\\"");
 		data = data.replace("'", "\\'");
 		data = data.replace("`", "\\`");
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
-		data = data.replace("\\", "\\\\");
 
 		return data;
 	}
@@ -105,13 +105,13 @@ public class User {
 		Long dataint = new Long(d);
 		String data = dataint.toString();
 
+		data = data.replace("\\", "\\\\");
 		data = data.replace("\"", "\\\"");
 		data = data.replace("'", "\\'");
 		data = data.replace("`", "\\`");
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
-		data = data.replace("\\", "\\\\");
 
 		return data;
 	}
