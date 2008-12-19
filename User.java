@@ -81,6 +81,7 @@ public class User {
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
+		data = data.replace("\\", "\\\\");
 
 		return data;
 	}
@@ -95,6 +96,7 @@ public class User {
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
+		data = data.replace("\\", "\\\\");
 
 		return data;
 	}
@@ -109,6 +111,7 @@ public class User {
 		data = data.replace("%", "\\%");
 		data = data.replace("(", "\\(");
 		data = data.replace(")", "\\)");
+		data = data.replace("\\", "\\\\");
 
 		return data;
 	}

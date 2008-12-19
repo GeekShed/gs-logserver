@@ -11,6 +11,7 @@
 -Alter- Changed to only log channel joins once to avoid table getting too large
 -Added- Response to VERSION command
 -Fixed- Really silly way of sending the connect commands
+-Fixed- Now escapes \ from SQL statements
 
 [Version 1.0]
 Initial Release
