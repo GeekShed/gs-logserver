@@ -10,6 +10,7 @@
 -Fixed- Null pointer exception caused by making calls to a class instance when class assigning failed. Moved inside check if.
 -Alter- Changed to only log channel joins once to avoid table getting too large
 -Added- Response to VERSION command
+-Fixed- Really silly way of sending the connect commands
 
 [Version 1.0]
 Initial Release
