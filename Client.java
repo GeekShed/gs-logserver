@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.0
+WyldRyde-Logger Log Server - V1.1
 
 Client Class File
 
@@ -39,6 +39,9 @@ import java.sql.*;
 
 // Client class
 public class Client {
+	// Statics
+	private static String VERSION = "1.1";
+
 	// Vars
 	private String remoteIP; // Link server IP
 	private int remotePort; // Link server port
@@ -158,7 +161,7 @@ public class Client {
 		if (connected) {
 			// Handle VERSION
 			if (tokens[1].equals("VERSION")) {
-				send(":" + this.serverName + " 351 " + tokens[0].substring(1) + " WyldRyde Log Server V1.0");
+				send(":" + this.serverName + " 351 " + tokens[0].substring(1) + " WyldRyde Log Server " + this.VERSION);
 			}
 			// Handle QUITs
 			else if (tokens[1].equals("QUIT")) {

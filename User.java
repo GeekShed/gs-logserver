@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.0
+WyldRyde-Logger Log Server - V1.1
 
 User Class File
 
@@ -247,7 +247,7 @@ public class User {
 	public void updateInDB() {
 		if (this.mysqlRecordId != 0) {
 			// Query
-			String sql = "UPDATE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
+			String sql = "UPDATE IGNORE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
 
 			try {
 				this.stmt.executeUpdate(sql);
