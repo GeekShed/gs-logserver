@@ -3,7 +3,6 @@
 
 [Version 1.1]
 
-[18/12/2008]
 -Fixed- Grammar of "WyldRyde Do -NOT-" changed to "WyldRyde Will -NOT-"
 -Added- Logging of KICKs to #serverbans
 -Fixed- Now creates an internal SendQ to minimize the number of packets flying across the interwebs on connect
