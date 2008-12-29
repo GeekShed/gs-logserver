@@ -44,6 +44,8 @@ public class LogServer {
 		try {
 			Class c = Class.forName("com.mysql.jdbc.Driver");
 
+			// MySQL Connection
+			// Syntax: jdbc:mysql://<server>:<port>/<database>, <username>, <password>
 			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/database_name", "dbuser", "secretdbpass");
 		}
 		catch (Exception e) {
@@ -51,6 +53,7 @@ public class LogServer {
 		}
 
 		// Create new instance of client server
+		// Syntax: <remote ip>, <link port>, <server name>, <server description>, <linkpass>, <MySQL Connection Variable>
 		Client c = new Client("1.2.3.4", 1234, "Logger.Network.Com", "Log Server", "secretlinkpass", con);
 
 		// Connect and process
