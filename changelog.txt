@@ -1,5 +1,7 @@
 [Version 1.2]
 
+-Fixed- Now actually logs the ident to the database rather than just storing it internally... Silly Me.
+
 
 [Version 1.1]
 

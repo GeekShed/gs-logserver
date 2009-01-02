@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `channels` (
   `timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `lid` (`lid`,`channel`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=237616 ;
 
 -- --------------------------------------------------------
 
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `channels` (
 CREATE TABLE IF NOT EXISTS `logs` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `nick` varchar(64) NOT NULL,
+  `ident` varchar(64) NOT NULL,
   `gecos` varchar(255) NOT NULL,
   `server` varchar(255) NOT NULL,
   `dport` int(10) unsigned NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `logs` (
   `con_timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `nick` (`nick`,`ip`,`timestamp`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=110169 ;
 
 -- --------------------------------------------------------
 
@@ -45,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `modes_off` (
   `mode` char(1) NOT NULL,
   `timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=837 ;
 
 -- --------------------------------------------------------
 
@@ -59,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `modes_on` (
   `mode` char(1) NOT NULL,
   `timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=477717 ;
 
 -- --------------------------------------------------------
 
@@ -73,4 +74,4 @@ CREATE TABLE IF NOT EXISTS `nicknames` (
   `nickname` varchar(64) NOT NULL,
   `timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=138422 ;

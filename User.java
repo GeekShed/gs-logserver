@@ -210,7 +210,7 @@ public class User {
 
 	// Create the user record in the database
 	public void createInDB() {
-		String sql = "INSERT INTO `logs` (`nick`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + sqlEscape(this.nick) + "', '" + sqlEscape(this.gecos) + "', '" + sqlEscape(this.server) + "', '" + sqlEscape(this.dport) + "', '" + sqlEscape(this.ip) + "', '" + sqlEscape(this.sport) + "', '" + sqlEscape(this.flags) + "', '" + sqlEscape(this.hostname) + "', '" + sqlEscape(this.timestamp) + "', '" + sqlEscape(this.timestamp) + "')";
+		String sql = "INSERT INTO `logs` (`nick`, `ident`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + sqlEscape(this.nick) + "', '" + sqlEscape(this.ident) + "', '" + sqlEscape(this.gecos) + "', '" + sqlEscape(this.server) + "', '" + sqlEscape(this.dport) + "', '" + sqlEscape(this.ip) + "', '" + sqlEscape(this.sport) + "', '" + sqlEscape(this.flags) + "', '" + sqlEscape(this.hostname) + "', '" + sqlEscape(this.timestamp) + "', '" + sqlEscape(this.timestamp) + "')";
 
 		// Attempt to insert into logs table
 		try {
@@ -247,7 +247,7 @@ public class User {
 	public void updateInDB() {
 		if (this.mysqlRecordId != 0) {
 			// Query
-			String sql = "UPDATE IGNORE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
+			String sql = "UPDATE IGNORE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `ident`='" + sqlEscape(this.ident) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
 
 			try {
 				this.stmt.executeUpdate(sql);
