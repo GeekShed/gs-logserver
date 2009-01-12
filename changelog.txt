@@ -1,23 +1,31 @@
 [Version 1.2]
 
--Fixed- Now actually logs the ident to the database rather than just storing it internally... Silly Me.
-
+F Now actually logs the ident to the database rather than just storing it internally... Silly Me.
+C Now uses a text based config file for ease of development and implementation - see example.conf
+F Possible null pointer exception where sql error < 68 chars
+F User Not Found! error on first dividing line of GETINFO response
+C Made sqlEscape int/long functions less dumb
+C Updated changelog to use common changelog prefixes (A - Added, C - Changed, F - Fixed, U - Updated)
+C Completely overhauled the way MySQL works - Now uses a handler class. This makes it easier to add default error handlers.
+C Moved sqlEscape functions to the new MySQL class
+A Logging of TKLs
 
 [Version 1.1]
 
--Fixed- Grammar of "WyldRyde Do -NOT-" changed to "WyldRyde Will -NOT-"
--Added- Logging of KICKs to #serverbans
--Fixed- Now creates an internal SendQ to minimize the number of packets flying across the interwebs on connect
--Fixed- Now gets IP from GETINFO not DNS resolving - Thanks Allan for pointing out the silly methodology :)
--Fixed- Added SQL escaping
--Fixed- Random bug whereby the server seems so send the NICK timestamp prefixed with a :
--Fixed- Null pointer exception caused by making calls to a class instance when class assigning failed. Moved inside check if.
--Alter- Changed to only log channel joins once to avoid table getting too large
--Added- Response to VERSION command
--Fixed- Really silly way of sending the connect commands
--Fixed- Now escapes \ from SQL statements
--Fixed- Another random bug with UPDATE statement - covered errors with IGNORE
--Alter- VERSION output now uses a static String set at the top of the Client class
+F Grammar of "WyldRyde Do -NOT-" changed to "WyldRyde Will -NOT-"
+A Logging of KICKs to #serverbans
+F Now creates an internal SendQ to minimize the number of packets flying across the interwebs on connect
+F Now gets IP from GETINFO not DNS resolving - Thanks Allan for pointing out the silly methodology :)
+F Added SQL escaping
+F Random bug whereby the server seems so send the NICK timestamp prefixed with a :
+F Null pointer exception caused by making calls to a class instance when class assigning failed. Moved inside check if.
+C Changed to only log channel joins once to avoid table getting too large
+A Response to VERSION command
+F Really silly way of sending the connect commands
+F Now escapes \ from SQL statements
+F Another random bug with UPDATE statement - covered errors with IGNORE
+C VERSION output now uses a static String set at the top of the Client class
 
 [Version 1.0]
+
 Initial Release

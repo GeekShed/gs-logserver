@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.1
+WyldRyde-Logger Log Server - V1.2
 
 Client Class File
 
@@ -40,7 +40,7 @@ import java.sql.*;
 // Client class
 public class Client {
 	// Statics
-	private static String VERSION = "1.1";
+	private static String VERSION = "1.2";
 
 	// Vars
 	private String remoteIP; // Link server IP
@@ -54,12 +54,12 @@ public class Client {
 	private boolean connected = false; // Connected to link server fully?
 	private Vector<User> Users = new Vector<User>(100, 100); // Users on network
 	private HashMap<String, String> getInfoNick = new HashMap<String, String>(50); // Used to stop laggy servers confusing GETINFO parser
-	private Connection mysql; // Mysql connection
+	private MySQL mysql; // Mysql connection
 	private StringBuffer sendQ = new StringBuffer(); // SendQ
 	private int qSize = 0; // SendQ Size Counter
 
 	// Constructor
-	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, Connection mysql) {
+	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, MySQL mysql) {
 		// Remember data
 		this.remoteIP = remoteIP;
 		this.remotePort = remotePort;
@@ -156,6 +156,30 @@ public class Client {
 				u.insertChannels();
 			}
 		}
+		// Handle TKLs
+		else if (tokens[1].equals("TKL")) {
+			// Build query
+			String sql = null;
+
+			// If setting on
+			if (tokens[2].equals("+")) {
+				sql = "INSERT INTO `tkl` (`on`, `type`, `user`, `host`, `source`, `expiretime`, `settime`, `reason`) VALUES (1, '" + MySQL.sqlEscape(tokens[3]) + "', '" + MySQL.sqlEscape(tokens[4]) + "', '" + MySQL.sqlEscape(tokens[5]) + "', '" + MySQL.sqlEscape(tokens[6]) + "', " + MySQL.sqlEscape(tokens[7]) + ", " + MySQL.sqlEscape(tokens[8]) + ", '" + MySQL.sqlEscape(tokens[9].substring(1)) + "')";
+				sql += " ON DUPLICATE KEY UPDATE `expiretime`=" + MySQL.sqlEscape(tokens[7]) + ", `reason`='" + MySQL.sqlEscape(tokens[9].substring(1)) + "'";
+			}
+			// If setting off
+			else {
+				sql = "INSERT INTO `tkl` (`on`, `type`, `user`, `host`, `source`, `expiretime`, `settime`, `reason`) VALUES (0, '" + MySQL.sqlEscape(tokens[3]) + "', '" + MySQL.sqlEscape(tokens[4]) + "', '" + MySQL.sqlEscape(tokens[5]) + "', '" + MySQL.sqlEscape(tokens[6]) + "', null, null, null)";
+			}
+
+			// Attempt to insert into tlk table
+			try {
+				this.mysql.executeUpdate(sql);
+			}
+			// On failure
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 
 		// If we're fully connected
 		if (connected) {
@@ -249,7 +273,7 @@ public class Client {
 				if (tokens[3].equals(":Info")) {
 					this.getInfoNick.put(tokens[0], tokens[5]); // Map server name to nickname
 				}
-				else {
+				else if (tokens[3].substring(0, 2) != ":=") { // In all other cases, besides the occurance of a dividing line...
 					// Get user object
 					u = this.getUserByNick(this.getInfoNick.get(tokens[0]));
 

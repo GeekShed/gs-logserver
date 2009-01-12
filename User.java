@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.1
+WyldRyde-Logger Log Server - V1.2
 
 User Class File
 
@@ -45,12 +45,11 @@ public class User {
 	private Vector<Character> modesOff = new Vector<Character>(20); // Modes set off
 	private Vector<String> channels = new Vector<String>(60); // Channels joined
 	private Vector<String> nicknames = new Vector<String>(60); // Nicknames used
-	private Connection mysql; // Mysql connection
-	private Statement stmt; // Mysql statement
+	private MySQL mysql; // Mysql connection
 	private long mysqlRecordId = 0; // Mysql insert id
 
 	// Constructor
-	public User(String nick, String ident, String gecos, String server, String hostname, long timestamp, Connection mysql) {
+	public User(String nick, String ident, String gecos, String server, String hostname, long timestamp, MySQL mysql) {
 		// Store data
 		this.nick = nick;
 		this.ident = ident;
@@ -60,60 +59,9 @@ public class User {
 		this.timestamp = timestamp;
 		this.mysql = mysql;
 
-		// Create statement object
-		try {
-			this.stmt = mysql.createStatement();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		// Save current nickname to nicknames table
 		this.nicknames.add(nick);
 		this.insertNicknames();
-	}
-
-	// Methods to escape data for sql input
-	public String sqlEscape(String data) {
-		data = data.replace("\\", "\\\\");
-		data = data.replace("\"", "\\\"");
-		data = data.replace("'", "\\'");
-		data = data.replace("`", "\\`");
-		data = data.replace("%", "\\%");
-		data = data.replace("(", "\\(");
-		data = data.replace(")", "\\)");
-
-		return data;
-	}
-
-	public String sqlEscape(int d) {
-		Integer dataint = new Integer(d);
-		String data = dataint.toString();
-
-		data = data.replace("\\", "\\\\");
-		data = data.replace("\"", "\\\"");
-		data = data.replace("'", "\\'");
-		data = data.replace("`", "\\`");
-		data = data.replace("%", "\\%");
-		data = data.replace("(", "\\(");
-		data = data.replace(")", "\\)");
-
-		return data;
-	}
-
-	public String sqlEscape(long d) {
-		Long dataint = new Long(d);
-		String data = dataint.toString();
-
-		data = data.replace("\\", "\\\\");
-		data = data.replace("\"", "\\\"");
-		data = data.replace("'", "\\'");
-		data = data.replace("`", "\\`");
-		data = data.replace("%", "\\%");
-		data = data.replace("(", "\\(");
-		data = data.replace(")", "\\)");
-
-		return data;
 	}
 
 	// Accessors and mutators
@@ -210,29 +158,29 @@ public class User {
 
 	// Create the user record in the database
 	public void createInDB() {
-		String sql = "INSERT INTO `logs` (`nick`, `ident`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + sqlEscape(this.nick) + "', '" + sqlEscape(this.ident) + "', '" + sqlEscape(this.gecos) + "', '" + sqlEscape(this.server) + "', '" + sqlEscape(this.dport) + "', '" + sqlEscape(this.ip) + "', '" + sqlEscape(this.sport) + "', '" + sqlEscape(this.flags) + "', '" + sqlEscape(this.hostname) + "', '" + sqlEscape(this.timestamp) + "', '" + sqlEscape(this.timestamp) + "')";
+		String sql = "INSERT INTO `logs` (`nick`, `ident`, `gecos`, `server`, `dport`, `ip`, `sport`, `flags`, `userhost`, `timestamp`, `con_timestamp`) VALUES ('" + MySQL.sqlEscape(this.nick) + "', '" + MySQL.sqlEscape(this.ident) + "', '" + MySQL.sqlEscape(this.gecos) + "', '" + MySQL.sqlEscape(this.server) + "', '" + MySQL.sqlEscape(this.dport) + "', '" + MySQL.sqlEscape(this.ip) + "', '" + MySQL.sqlEscape(this.sport) + "', '" + MySQL.sqlEscape(this.flags) + "', '" + MySQL.sqlEscape(this.hostname) + "', '" + MySQL.sqlEscape(this.timestamp) + "', '" + MySQL.sqlEscape(this.timestamp) + "')";
 
 		// Attempt to insert into logs table
 		try {
-			this.stmt.executeUpdate(sql);
+			this.mysql.executeUpdate(sql);
 
 			// Get mysql insert id
-			ResultSet rs = this.stmt.executeQuery("SELECT LAST_INSERT_ID() AS insid");
+			ResultSet rs = this.mysql.executeQuery("SELECT LAST_INSERT_ID() AS insid");
 			rs.next();
 			this.mysqlRecordId = rs.getLong("insid");
 		}
 		// On failure
 		catch (Exception e) {
 			// If not dup key error
-			if (!e.getMessage().substring(0, 68).equals("Duplicate key or integrity constraint violation message from server:")) {
+			if (e.getMessage().length() >= 68 && !e.getMessage().substring(0, 68).equals("Duplicate key or integrity constraint violation message from server:")) {
 				e.printStackTrace();
 			}
 			else { // If dup key error
 				// Get the ID of row causing clash and remember
-				sql = "SELECT `id` FROM `logs` WHERE `nick`='" + sqlEscape(this.nick) + "' AND `ip`='" + sqlEscape(this.ip) + "' AND `timestamp`='" + sqlEscape(this.timestamp) + "'";
+				sql = "SELECT `id` FROM `logs` WHERE `nick`='" + MySQL.sqlEscape(this.nick) + "' AND `ip`='" + MySQL.sqlEscape(this.ip) + "' AND `timestamp`='" + MySQL.sqlEscape(this.timestamp) + "'";
 
 				try {
-					ResultSet rs = this.stmt.executeQuery(sql);
+					ResultSet rs = this.mysql.executeQuery(sql);
 					rs.next();
 					this.mysqlRecordId = rs.getLong("id");
 				}
@@ -247,10 +195,10 @@ public class User {
 	public void updateInDB() {
 		if (this.mysqlRecordId != 0) {
 			// Query
-			String sql = "UPDATE IGNORE `logs` SET `nick`='" + sqlEscape(this.nick) + "', `ident`='" + sqlEscape(this.ident) + "', `gecos`='" + sqlEscape(this.gecos) + "', `server`='" + sqlEscape(this.server) + "', `dport`='" + sqlEscape(this.dport) + "', `ip`='" + sqlEscape(this.ip) + "', `sport`='" + sqlEscape(this.sport) + "', `flags`='" + sqlEscape(this.flags) + "', `userhost`='" + sqlEscape(this.hostname) + "', `timestamp`='" + sqlEscape(this.timestamp) + "' WHERE `id`=" + sqlEscape(this.mysqlRecordId);
+			String sql = "UPDATE IGNORE `logs` SET `nick`='" + MySQL.sqlEscape(this.nick) + "', `ident`='" + MySQL.sqlEscape(this.ident) + "', `gecos`='" + MySQL.sqlEscape(this.gecos) + "', `server`='" + MySQL.sqlEscape(this.server) + "', `dport`='" + MySQL.sqlEscape(this.dport) + "', `ip`='" + MySQL.sqlEscape(this.ip) + "', `sport`='" + MySQL.sqlEscape(this.sport) + "', `flags`='" + MySQL.sqlEscape(this.flags) + "', `userhost`='" + MySQL.sqlEscape(this.hostname) + "', `timestamp`='" + MySQL.sqlEscape(this.timestamp) + "' WHERE `id`=" + MySQL.sqlEscape(this.mysqlRecordId);
 
 			try {
-				this.stmt.executeUpdate(sql);
+				this.mysql.executeUpdate(sql);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -265,7 +213,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < nicknames.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(nicknames.get(i)) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + MySQL.sqlEscape(nicknames.get(i)) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query
@@ -276,7 +224,7 @@ public class User {
 
 			// Do Query
 			try {
-				this.stmt.executeUpdate(sql);
+				this.mysql.executeUpdate(sql);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -291,7 +239,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < v.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(v.get(i).toString()) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + MySQL.sqlEscape(v.get(i).toString()) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query
@@ -302,7 +250,7 @@ public class User {
 
 			// Do query
 			try {
-				this.stmt.executeUpdate(sql);
+				this.mysql.executeUpdate(sql);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -323,7 +271,7 @@ public class User {
 
 			// Loop vector and build query
 			for (int i = 0; i < channels.size(); i++) {
-				sql = sql + "('" + this.mysqlRecordId + "', '" + sqlEscape(channels.get(i)) + "', UNIX_TIMESTAMP()), ";
+				sql = sql + "('" + this.mysqlRecordId + "', '" + MySQL.sqlEscape(channels.get(i)) + "', UNIX_TIMESTAMP()), ";
 			}
 
 			// Trim query
@@ -334,7 +282,7 @@ public class User {
 
 			// Do query
 			try {
-				this.stmt.executeUpdate(sql);
+				this.mysql.executeUpdate(sql);
 			}
 			catch (Exception e) {
 				e.printStackTrace();

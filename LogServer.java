@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.1
+WyldRyde-Logger Log Server - V1.2
 
 Main LogServer Class File
 
@@ -33,28 +33,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Libs
 import java.sql.*;
+import java.util.*;
 
 // Log server class
 public class LogServer {
 	// Main method
 	public static void main(String args[]) {
-		Connection con = null;
+		MySQL con = null;
+
+		HashMap<String, String> options = Utils.parseConfig("logserver.conf");
 
 		// Create MySQL Connection
-		try {
-			Class c = Class.forName("com.mysql.jdbc.Driver");
 
-			// MySQL Connection
-			// Syntax: jdbc:mysql://<server>:<port>/<database>, <username>, <password>
-			con = DriverManager.getConnection("jdbc:mysql://localhost:3306/database_name", "dbuser", "secretdbpass");
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
+		// MySQL Connection
+		// Syntax: <server>, <port>, <database>, <username>, <password>
+		con = new MySQL(options.get("mysql-host"), Integer.parseInt(options.get("mysql-port")), options.get("mysql-database"), options.get("mysql-user"), options.get("mysql-password"));
 
 		// Create new instance of client server
 		// Syntax: <remote ip>, <link port>, <server name>, <server description>, <linkpass>, <MySQL Connection Variable>
-		Client c = new Client("1.2.3.4", 1234, "Logger.Network.Com", "Log Server", "secretlinkpass", con);
+		Client c = new Client(options.get("link-ip"), Integer.parseInt(options.get("link-port")), options.get("logserver-name"), options.get("logserver-description"), options.get("link-password"), con);
 
 		// Connect and process
 		try {
