@@ -75,3 +75,23 @@ CREATE TABLE IF NOT EXISTS `nicknames` (
   `timestamp` int(10) unsigned NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=138422 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tkl`
+--
+
+CREATE TABLE IF NOT EXISTS `tkl` (
+  `id` int(10) unsigned NOT NULL auto_increment,
+  `on` tinyint(1) NOT NULL,
+  `type` char(1) NOT NULL,
+  `user` varchar(64) NOT NULL,
+  `host` varchar(255) NOT NULL,
+  `source` varchar(255) NOT NULL,
+  `expiretime` int(10) unsigned default NULL,
+  `settime` int(10) unsigned default NULL,
+  `reason` text,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `user` (`user`,`host`,`settime`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=17 ;
