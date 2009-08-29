@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.2
+WyldRyde-Logger Log Server - V1.3
 
 User Class File
 

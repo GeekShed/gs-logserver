@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.2
+WyldRyde-Logger Log Server - V1.3
 
 Client Class File
 
@@ -40,7 +40,7 @@ import java.sql.*;
 // Client class
 public class Client {
 	// Statics
-	private static String VERSION = "1.2";
+	private static String VERSION = "1.3";
 
 	// Vars
 	private String remoteIP; // Link server IP

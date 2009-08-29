@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.2
+WyldRyde-Logger Log Server - V1.3
 
 Main LogServer Class File
 
@@ -63,6 +63,9 @@ public class LogServer {
 		// Create new instance of client server
 		// Syntax: <remote ip>, <link port>, <server name>, <server description>, <linkpass>, <MySQL Connection Variable>
 		Client c = new Client(options.get("link-ip"), Integer.parseInt(options.get("link-port")), options.get("logserver-name"), options.get("logserver-description"), options.get("link-password"), con);
+
+		// Set the Client instance in the MySQL instance so MySQL can output errors
+		con.setClient(c);
 
 		// Connect and process
 		try {

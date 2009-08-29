@@ -1,5 +1,5 @@
 /*
-WyldRyde-Logger Log Server - V1.2
+WyldRyde-Logger Log Server - V1.3
 
 MySQL Class File
 
@@ -39,6 +39,7 @@ public class MySQL {
 	private String host, database, user, password;
 	private int port;
 	Connection con;
+	Client c;
 
 	// Constructor
 	public MySQL(String host, int port, String database, String user, String password) {
@@ -53,65 +54,111 @@ public class MySQL {
 		connect();
 	}
 
+	// Method to set the Client instance
+	public void setClient(Client c) {
+		this.c = c;
+	}
+
+
 	// Method to connect
 	public void connect() {
+		boolean err = false;
+
+		// Create the class with voodoo
 		try {
 			Class c = Class.forName("com.mysql.jdbc.Driver");
-
-			// Create connection object
-			con = DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database, this.user, this.password);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
+		}
+
+		// Try to connect to the sql server
+		try {
+			// Create connection object
+			con = DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database, this.user, this.password);
+		}
+		catch (SQLException e) {
+			// If we're not connected
+			if (e.getSQLState().equals("08S01")) {
+				this.clientSendGlobops("Unable To Connect To MySQL Server. Retrying in 30 seconds..."); // Whine a little
+
+				// Print error
+				e.printStackTrace();
+
+				// Wait 30 seconds
+				try {
+					Thread.sleep(30000);
+				}
+				catch (Exception e2) {}
+
+				// Reconnect
+				connect();
+			}
+			else {
+				// Print error to console
+				e.printStackTrace();
+			}
+
+			// Error was thrown
+			err = true;
+		}
+
+		// If no error thrown...
+		if (!err) {
+			this.clientSendGlobops("Connected to MySQL Server!");
 		}
 	}
 
 	// Update query method
 	public void executeUpdate(String sql) throws Exception {
-		// Make statement
-		Statement stmt = this.getStatement();
-
 		try {
+			// Make statement
+			Statement stmt = this.getStatement();
+
 			// Execute
 			stmt.executeUpdate(sql);
 		}
-		catch (Exception e) {
+		catch (SQLException e) {
 			// Add handlers here
-
-			// Throw the exception on down
-			throw e;
+			if (e.getSQLState().equals("08S01")) {
+				this.clientSendGlobops("MySQL Server Has Gone Away! Attempting Reconnect...");
+				this.connect();
+			}
+			else {
+				// Throw the exception on down
+				throw e;
+			}
 		}
 	}
 
 	// Query method
 	public ResultSet executeQuery(String sql) throws Exception {
-		// Make statement
-		Statement stmt = this.getStatement();
-
 		try {
+			// Make statement
+			Statement stmt = this.getStatement();
+
 			// Execute
 			return stmt.executeQuery(sql);
 		}
-		catch (Exception e) {
+		catch (SQLException e) {
 			// Add handlers here
-
-			// Throw the exception on down
-			throw e;
-		}
-	}
-
-	// Method to create a statement
-	private Statement getStatement() {
-		// Create statement object
-		try {
-			// Make statement and return
-			return this.con.createStatement();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
+			if (e.getSQLState().equals("08S01")) {
+				this.clientSendGlobops("MySQL Server Has Gone Away! Attempting Reconnect...");
+				this.connect();
+			}
+			else {
+				// Throw the exception on down
+				throw e;
+			}
 		}
 
 		return null;
+	}
+
+	// Method to create a statement
+	private Statement getStatement() throws Exception {
+		// Make statement and return
+		return this.con.createStatement();
 	}
 
 	// Methods to escape data for sql input
@@ -139,5 +186,13 @@ public class MySQL {
 		String data = dataint.toString();
 
 		return sqlEscape(data);
+	}
+
+	public void clientSendGlobops(String s) {
+		if (c != null) {
+			c.send("GLOBOPS " + s + "");
+		}
+
+		System.out.println("System Message: " + s);
 	}
 }
