@@ -163,8 +163,15 @@ public class Client {
 
 			// If setting on
 			if (tokens[2].equals("+")) {
-				sql = "INSERT INTO `tkl` (`on`, `type`, `user`, `host`, `source`, `expiretime`, `settime`, `reason`) VALUES (1, '" + MySQL.sqlEscape(tokens[3]) + "', '" + MySQL.sqlEscape(tokens[4]) + "', '" + MySQL.sqlEscape(tokens[5]) + "', '" + MySQL.sqlEscape(tokens[6]) + "', " + MySQL.sqlEscape(tokens[7]) + ", " + MySQL.sqlEscape(tokens[8]) + ", '" + MySQL.sqlEscape(tokens[9].substring(1)) + "')";
-				sql += " ON DUPLICATE KEY UPDATE `expiretime`=" + MySQL.sqlEscape(tokens[7]) + ", `reason`='" + MySQL.sqlEscape(tokens[9].substring(1)) + "'";
+				// Build Reason
+				String reason = tokens[9].substring(1);
+
+				for (int i = 10; i < tokens.length; i++) {
+					reason = reason + " " + tokens[i];
+				}
+
+				sql = "INSERT INTO `tkl` (`on`, `type`, `user`, `host`, `source`, `expiretime`, `settime`, `reason`) VALUES (1, '" + MySQL.sqlEscape(tokens[3]) + "', '" + MySQL.sqlEscape(tokens[4]) + "', '" + MySQL.sqlEscape(tokens[5]) + "', '" + MySQL.sqlEscape(tokens[6]) + "', " + MySQL.sqlEscape(tokens[7]) + ", " + MySQL.sqlEscape(tokens[8]) + ", '" + MySQL.sqlEscape(reason) + "')";
+				sql += " ON DUPLICATE KEY UPDATE `expiretime`=" + MySQL.sqlEscape(tokens[7]) + ", `reason`='" + MySQL.sqlEscape(reason) + "'";
 			}
 			// If setting off
 			else {
