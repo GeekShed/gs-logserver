@@ -49,17 +49,6 @@ public class LogServer {
 		// Syntax: <server>, <port>, <database>, <username>, <password>
 		con = new MySQL(options.get("mysql-host"), Integer.parseInt(options.get("mysql-port")), options.get("mysql-database"), options.get("mysql-user"), options.get("mysql-password"));
 
-		// Truncate tkl table
-		String sql = "TRUNCATE TABLE `tkl`";
-
-		try {
-			con.executeUpdate(sql);
-		}
-		// On failure
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		// Create new instance of client server
 		// Syntax: <remote ip>, <link port>, <server name>, <server description>, <linkpass>, <MySQL Connection Variable>
 		Client c = new Client(options.get("link-ip"), Integer.parseInt(options.get("link-port")), options.get("logserver-name"), options.get("logserver-description"), options.get("link-password"), con);
