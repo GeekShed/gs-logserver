@@ -1,14 +1,13 @@
 /*
- Copyright (C) 2002-2004 MySQL AB
+ Copyright  2002-2007 MySQL AB, 2008 Sun Microsystems
 
  This program is free software; you can redistribute it and/or modify
- it under the terms of version 2 of the GNU General Public License as
+ it under the terms of version 2 of the GNU General Public License as 
  published by the Free Software Foundation.
- 
 
  There are special exceptions to the terms and conditions of the GPL 
  as it is applied to this software. View the full text of the 
- exception exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
+ exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
  software distribution.
 
  This program is distributed in the hope that it will be useful,
@@ -20,349 +19,490 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+
  */
 package com.mysql.jdbc;
 
-import java.io.IOException;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
+import com.mysql.jdbc.profiler.ProfilerEvent;
+import com.mysql.jdbc.profiler.ProfilerEventHandler;
+import com.mysql.jdbc.profiler.ProfilerEventHandlerFactory;
 
 /**
  * Allows streaming of MySQL data.
- *
+ * 
  * @author dgan
- * @version $Id: RowDataDynamic.java,v 1.8.2.10 2005/01/19 15:19:23 mmatthew Exp $
+ * @version $Id$
  */
 public class RowDataDynamic implements RowData {
-    private MysqlIO io;
-    private byte[][] nextRow;
-    private boolean isAfterEnd = false;
-    private boolean isAtEnd = false;
-    private boolean streamerClosed = false;
-    private int columnCount;
-    private int index = -1;
-    private long lastSuccessfulReadTimeMs = 0;
-    private long netWriteTimeoutMs = 0;
-    private ResultSet owner;
 
-    /**
-     * Creates a new RowDataDynamic object.
-     *
-     * @param io DOCUMENT ME!
-     * @param colCount DOCUMENT ME!
-     *
-     * @throws SQLException DOCUMENT ME!
-     */
-    public RowDataDynamic(MysqlIO io, int colCount) throws SQLException {
-        this.io = io;
-        this.columnCount = colCount;
-        nextRecord();
-    }
-
-    /**
-     * Returns true if we got the last element.
-     *
-     * @return true if after last row
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean isAfterLast() throws SQLException {
-        return isAfterEnd;
-    }
-
-    /**
-     * Only works on non dynamic result sets.
-     *
-     * @param index row number to get at
-     *
-     * @return row data at index
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public byte[][] getAt(int index) throws SQLException {
-        notSupported();
-
-        return null;
-    }
-
-    /**
-     * Returns if iteration has not occured yet.
-     *
-     * @return true if before first row
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean isBeforeFirst() throws SQLException {
-        return index < 0;
-    }
-
-    /**
-     * Moves the current position in the result set to the given row number.
-     *
-     * @param rowNumber row to move to
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void setCurrentRow(int rowNumber) throws SQLException {
-        notSupported();
-    }
-    
-	/**
-	 * @see com.mysql.jdbc.RowData#setOwner(com.mysql.jdbc.ResultSet)
-	 */
-	public void setOwner(ResultSet rs) {
-		this.owner = rs;
+	class OperationNotSupportedException extends SQLException {
+		OperationNotSupportedException() {
+			super(
+					Messages.getString("RowDataDynamic.10"), SQLError.SQL_STATE_ILLEGAL_ARGUMENT); //$NON-NLS-1$
+		}
 	}
+
+	private int columnCount;
+
+	private Field[] metadata;
+
+	private int index = -1;
+
+	private MysqlIO io;
+
+	private boolean isAfterEnd = false;
+
+	private boolean noMoreRows = false;
+
+	private boolean isBinaryEncoded = false;
+
+	private ResultSetRow nextRow;
+
+	private ResultSetImpl owner;
+
+	private boolean streamerClosed = false;
 	
+	private boolean wasEmpty = false; // we don't know until we attempt to traverse
+
+	private boolean useBufferRowExplicit;
+
+	private boolean moreResultsExisted;
+
+	private ExceptionInterceptor exceptionInterceptor;
+	
+	/**
+	 * Creates a new RowDataDynamic object.
+	 * 
+	 * @param io
+	 *            the connection to MySQL that this data is coming from
+	 * @param metadata
+	 *            the metadata that describe this data
+	 * @param isBinaryEncoded
+	 *            is this data in native format?
+	 * @param colCount
+	 *            the number of columns
+	 * @throws SQLException
+	 *             if the next record can not be found
+	 */
+	public RowDataDynamic(MysqlIO io, int colCount, Field[] fields,
+			boolean isBinaryEncoded) throws SQLException {
+		this.io = io;
+		this.columnCount = colCount;
+		this.isBinaryEncoded = isBinaryEncoded;
+		this.metadata = fields;
+		this.exceptionInterceptor = this.io.getExceptionInterceptor();
+		this.useBufferRowExplicit = MysqlIO.useBufferRowExplicit(this.metadata);
+	}
+
+	/**
+	 * Adds a row to this row data.
+	 * 
+	 * @param row
+	 *            the row to add
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void addRow(ResultSetRow row) throws SQLException {
+		notSupported();
+	}
+
+	/**
+	 * Moves to after last.
+	 * 
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void afterLast() throws SQLException {
+		notSupported();
+	}
+
+	/**
+	 * Moves to before first.
+	 * 
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void beforeFirst() throws SQLException {
+		notSupported();
+	}
+
+	/**
+	 * Moves to before last so next el is the last el.
+	 * 
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void beforeLast() throws SQLException {
+		notSupported();
+	}
+
+	/**
+	 * We're done.
+	 * 
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void close() throws SQLException {
+		// Belt and suspenders here - if we don't
+		// have a reference to the connection
+		// it's more than likely dead/gone and we
+		// won't be able to consume rows anyway
+
+		Object mutex = this;
+
+		ConnectionImpl conn = null;
+
+		if (this.owner != null) {
+			conn = this.owner.connection;
+
+			if (conn != null) {
+				mutex = conn.getMutex();
+			}
+		}
+
+		boolean hadMore = false;
+		int howMuchMore = 0;
+
+		synchronized (mutex) {
+			// drain the rest of the records.
+			while (next() != null) {
+				hadMore = true;
+				howMuchMore++;
+
+				if (howMuchMore % 100 == 0) {
+					Thread.yield();
+				}
+			}
+
+			if (conn != null) {
+				if (!conn.getClobberStreamingResults() && 
+						conn.getNetTimeoutForStreamingResults() > 0) {
+					String oldValue = conn
+					.getServerVariable("net_write_timeout");
+
+					if (oldValue == null || oldValue.length() == 0) {
+						oldValue = "60"; // the current default
+					}
+
+					this.io.clearInputStream();
+					
+					java.sql.Statement stmt = null;
+					
+					try {
+						stmt = conn.createStatement();
+						((com.mysql.jdbc.StatementImpl)stmt).executeSimpleNonQuery(conn, "SET net_write_timeout=" + oldValue);
+					} finally {
+						if (stmt != null) {
+							stmt.close();
+						}
+					}
+				}
+				
+				if (conn.getUseUsageAdvisor()) {
+					if (hadMore) {
+
+						ProfilerEventHandler eventSink = ProfilerEventHandlerFactory
+						.getInstance(conn);
+
+						eventSink
+						.consumeEvent(new ProfilerEvent(
+								ProfilerEvent.TYPE_WARN,
+								"", //$NON-NLS-1$
+								this.owner.owningStatement == null ? "N/A" : this.owner.owningStatement.currentCatalog, //$NON-NLS-1$
+								this.owner.connectionId,
+								this.owner.owningStatement == null ? -1
+										: this.owner.owningStatement
+												.getId(),
+								-1,
+								System.currentTimeMillis(),
+								0,
+								Constants.MILLIS_I18N,
+								null,
+								null,
+								Messages.getString("RowDataDynamic.2") //$NON-NLS-1$
+										+ howMuchMore
+										+ Messages
+												.getString("RowDataDynamic.3") //$NON-NLS-1$
+										+ Messages
+												.getString("RowDataDynamic.4") //$NON-NLS-1$
+										+ Messages
+												.getString("RowDataDynamic.5") //$NON-NLS-1$
+										+ Messages
+												.getString("RowDataDynamic.6") //$NON-NLS-1$
+										+ this.owner.pointOfOrigin));
+					}
+				}
+			}
+		}
+
+		this.metadata = null;
+		this.owner = null;
+	}
+
+	/**
+	 * Only works on non dynamic result sets.
+	 * 
+	 * @param index
+	 *            row number to get at
+	 * @return row data at index
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public ResultSetRow getAt(int ind) throws SQLException {
+		notSupported();
+
+		return null;
+	}
+
+	/**
+	 * Returns the current position in the result set as a row number.
+	 * 
+	 * @return the current row number
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public int getCurrentRowNumber() throws SQLException {
+		notSupported();
+
+		return -1;
+	}
+
 	/**
 	 * @see com.mysql.jdbc.RowData#getOwner()
 	 */
-	public ResultSet getOwner() {
+	public ResultSetInternalMethods getOwner() {
 		return this.owner;
 	}
 
-    /**
-     * Returns the current position in the result set as a row number.
-     *
-     * @return the current row number
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public int getCurrentRowNumber() throws SQLException {
-        notSupported();
+	/**
+	 * Returns true if another row exsists.
+	 * 
+	 * @return true if more rows
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean hasNext() throws SQLException {
+		boolean hasNext = (this.nextRow != null);
 
-        return -1;
-    }
+		if (!hasNext && !this.streamerClosed) {
+			this.io.closeStreamer(this);
+			this.streamerClosed = true;
+		}
 
-    /**
-     * Returns true if the result set is dynamic. This means that move back and
-     * move forward won't work because we do not hold on to the records.
-     *
-     * @return true if this result set is streaming from the server
-     */
-    public boolean isDynamic() {
-        return true;
-    }
+		return hasNext;
+	}
 
-    /**
-     * Has no records.
-     *
-     * @return true if no records
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean isEmpty() throws SQLException {
-        notSupported();
+	/**
+	 * Returns true if we got the last element.
+	 * 
+	 * @return true if after last row
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean isAfterLast() throws SQLException {
+		return this.isAfterEnd;
+	}
 
-        return false;
-    }
+	/**
+	 * Returns if iteration has not occured yet.
+	 * 
+	 * @return true if before first row
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean isBeforeFirst() throws SQLException {
+		return this.index < 0;
+	}
 
-    /**
-     * Are we on the first row of the result set?
-     *
-     * @return true if on first row
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean isFirst() throws SQLException {
-        notSupported();
+	/**
+	 * Returns true if the result set is dynamic.
+	 * 
+	 * This means that move back and move forward won't work because we do not
+	 * hold on to the records.
+	 * 
+	 * @return true if this result set is streaming from the server
+	 */
+	public boolean isDynamic() {
+		return true;
+	}
 
-        return false;
-    }
+	/**
+	 * Has no records.
+	 * 
+	 * @return true if no records
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean isEmpty() throws SQLException {
+		notSupported();
 
-    /**
-     * Are we on the last row of the result set?
-     *
-     * @return true if on last row
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean isLast() throws SQLException {
-        notSupported();
+		return false;
+	}
 
-        return false;
-    }
+	/**
+	 * Are we on the first row of the result set?
+	 * 
+	 * @return true if on first row
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean isFirst() throws SQLException {
+		notSupported();
 
-    /**
-     * Adds a row to this row data.
-     *
-     * @param row the row to add
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void addRow(byte[][] row) throws SQLException {
-        notSupported();
-    }
+		return false;
+	}
 
-    /**
-     * Moves to after last.
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void afterLast() throws SQLException {
-        notSupported();
-    }
+	/**
+	 * Are we on the last row of the result set?
+	 * 
+	 * @return true if on last row
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public boolean isLast() throws SQLException {
+		notSupported();
 
-    /**
-     * Moves to before first.
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void beforeFirst() throws SQLException {
-        notSupported();
-    }
+		return false;
+	}
 
-    /**
-     * Moves to before last so next el is the last el.
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void beforeLast() throws SQLException {
-        notSupported();
-    }
+	/**
+	 * Moves the current position relative 'rows' from the current position.
+	 * 
+	 * @param rows
+	 *            the relative number of rows to move
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void moveRowRelative(int rows) throws SQLException {
+		notSupported();
+	}
 
-    /**
-     * We're done.
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void close() throws SQLException {
-        //drain the rest of the records.
-        int count = 0;
-        
-        while (this.hasNext()) {
-            this.next();
-            
-            count++;
-            
-            if (count == 100) {
-            	Thread.yield();
-            	count = 0;
-            }
-        }
-    }
+	/**
+	 * Returns the next row.
+	 * 
+	 * @return the next row value
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public ResultSetRow next() throws SQLException {
+		
 
-    /**
-     * Returns true if another row exsists.
-     *
-     * @return true if more rows
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public boolean hasNext() throws SQLException {
-        boolean hasNext = (nextRow != null);
+		nextRecord();
 
-        if (!hasNext && !streamerClosed) {
-            io.closeStreamer(this);
-            streamerClosed = true;
-        }
+		if (this.nextRow == null && !this.streamerClosed && !this.moreResultsExisted) {
+			this.io.closeStreamer(this);
+			this.streamerClosed = true;
+		}
+		
+		if (this.nextRow != null) {
+			if (this.index != Integer.MAX_VALUE) {
+				this.index++;
+			}
+		}
+		
+		return this.nextRow;
+	}
 
-        return hasNext;
-    }
 
-    /**
-     * Moves the current position relative 'rows' from the current position.
-     *
-     * @param rows the relative number of rows to move
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void moveRowRelative(int rows) throws SQLException {
-        notSupported();
-    }
+	private void nextRecord() throws SQLException {
 
-    /**
-     * Returns the next row.
-     *
-     * @return the next row value
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public byte[][] next() throws SQLException {
-    	// Clamp this value to max for extremely large
-    	// result sets.
-    	if (index != Integer.MAX_VALUE) {
-    		index++;
-    	}
+		try {
+			if (!this.noMoreRows) {				
+				this.nextRow = this.io.nextRow(this.metadata, this.columnCount,
+						this.isBinaryEncoded,
+						java.sql.ResultSet.CONCUR_READ_ONLY, true, 
+						this.useBufferRowExplicit, true, null);
 
-        byte[][] ret = nextRow;
-        nextRecord();
+				if (this.nextRow == null) {
+					this.noMoreRows = true;
+					this.isAfterEnd = true;
+					this.moreResultsExisted = this.io.tackOnMoreStreamingResults(this.owner);
 
-        return ret;
-    }
+					if (this.index == -1) {
+						this.wasEmpty = true;
+					}
+				}
+			} else {
+				this.isAfterEnd = true;
+			}
+		} catch (SQLException sqlEx) {
+			if (sqlEx instanceof StreamingNotifiable) {
+				((StreamingNotifiable)sqlEx).setWasStreamingResults();
+			}
+			
+			// don't wrap SQLExceptions
+			throw sqlEx;
+		} catch (Exception ex) {
+			String exceptionType = ex.getClass().getName();
+			String exceptionMessage = ex.getMessage();
 
-    /**
-     * Removes the row at the given index.
-     *
-     * @param index the row to move to
-     *
-     * @throws SQLException if a database error occurs
-     */
-    public void removeRow(int index) throws SQLException {
-        notSupported();
-    }
+			exceptionMessage += Messages.getString("RowDataDynamic.7"); //$NON-NLS-1$
+			exceptionMessage += Util.stackTraceToString(ex);
 
-    /**
-     * Only works on non dynamic result sets.
-     *
-     * @return the size of this row data
-     */
-    public int size() {
-        return RESULT_SET_SIZE_UNKNOWN;
-    }
+			SQLException sqlEx = SQLError.createSQLException(
+					Messages.getString("RowDataDynamic.8") //$NON-NLS-1$
+							+ exceptionType
+							+ Messages.getString("RowDataDynamic.9") + exceptionMessage, SQLError.SQL_STATE_GENERAL_ERROR, this.exceptionInterceptor); //$NON-NLS-1$
+			sqlEx.initCause(ex);
+			
+			throw sqlEx;
+		}
+	}
 
-    private void nextRecord() throws SQLException {
-        try {
-            if (!isAtEnd) {
-                nextRow = io.nextRow((int) columnCount);
+	private void notSupported() throws SQLException {
+		throw new OperationNotSupportedException();
+	}
 
-                if (nextRow == null) {
-                    isAtEnd = true;
-                }
-                
-                this.lastSuccessfulReadTimeMs = System.currentTimeMillis();
-            } else {
-                isAfterEnd = true;
-            }
-        } catch (SQLException sqlEx) {
-            // don't wrap SQLExceptions
-            throw sqlEx;
-        } catch (IOException ioEx) {
-        	long timeSinceLastReadMs = System.currentTimeMillis() - this.lastSuccessfulReadTimeMs;
-        	
-            String exceptionType = ioEx.getClass().getName();
-            String exceptionMessage = ioEx.getMessage();
+	/**
+	 * Removes the row at the given index.
+	 * 
+	 * @param index
+	 *            the row to move to
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void removeRow(int ind) throws SQLException {
+		notSupported();
+	}
 
-            exceptionMessage += "\n\nNested Stack Trace:\n";
-            exceptionMessage += Util.stackTraceToString(ioEx);
+	/**
+	 * Moves the current position in the result set to the given row number.
+	 * 
+	 * @param rowNumber
+	 *            row to move to
+	 * @throws SQLException
+	 *             if a database error occurs
+	 */
+	public void setCurrentRow(int rowNumber) throws SQLException {
+		notSupported();
+	}
 
-            throw new java.sql.SQLException(
-                "IOException while retrieving next record in streaming result set."
-                + "(Check for deadlock "
-                + " or retrieval exceeding 'net_write_timeout' seconds. Last "
-                + "successful record read was " + timeSinceLastReadMs + " ms ago, and"                + "'net_write_timeout' is configured in the server as " + this.netWriteTimeoutMs 
-                + " ms.) : "
-                + exceptionType + " message given: " + exceptionMessage, SQLError.SQL_STATE_GENERAL_ERROR);
-        } catch (Exception ex) {
-            String exceptionType = ex.getClass().getName();
-            String exceptionMessage = ex.getMessage();
+	/**
+	 * @see com.mysql.jdbc.RowData#setOwner(com.mysql.jdbc.ResultSetInternalMethods)
+	 */
+	public void setOwner(ResultSetImpl rs) {
+		this.owner = rs;
+	}
 
-            exceptionMessage += "\n\nNested Stack Trace:\n";
-            exceptionMessage += Util.stackTraceToString(ex);
+	/**
+	 * Only works on non dynamic result sets.
+	 * 
+	 * @return the size of this row data
+	 */
+	public int size() {
+		return RESULT_SET_SIZE_UNKNOWN;
+	}
 
-            throw new java.sql.SQLException(
-                "Error retrieving record: Unexpected Exception: "
-                + exceptionType + " message given: " + exceptionMessage, SQLError.SQL_STATE_GENERAL_ERROR);
-        }
-    }
+	public boolean wasEmpty() {
+		return this.wasEmpty;
+	}
 
-    private void notSupported() throws SQLException {
-        throw new OperationNotSupportedException();
-    }
-
-    class OperationNotSupportedException extends SQLException {
-        OperationNotSupportedException() {
-            super("Operation not supported for streaming result sets", SQLError.SQL_STATE_ILLEGAL_ARGUMENT);
-        }
-    }
+	public void setMetadata(Field[] metadata) {
+		this.metadata = metadata;
+	}
 }

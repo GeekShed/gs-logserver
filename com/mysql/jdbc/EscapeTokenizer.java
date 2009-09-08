@@ -1,14 +1,13 @@
 /*
- Copyright (C) 2002-2004 MySQL AB
+ Copyright  2002-2004 MySQL AB, 2008 Sun Microsystems
 
  This program is free software; you can redistribute it and/or modify
- it under the terms of version 2 of the GNU General Public License as
+ it under the terms of version 2 of the GNU General Public License as 
  published by the Free Software Foundation.
- 
 
  There are special exceptions to the terms and conditions of the GPL 
  as it is applied to this software. View the full text of the 
- exception exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
+ exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
  software distribution.
 
  This program is distributed in the hope that it will be useful,
@@ -20,155 +19,178 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+
  */
 package com.mysql.jdbc;
 
-
 /**
- * EscapeTokenizer breaks up an SQL statement into SQL and
- * escape code parts.
- *
+ * EscapeTokenizer breaks up an SQL statement into SQL and escape code parts.
+ * 
  * @author Mark Matthews
  */
 public class EscapeTokenizer {
-    private String source = null;
-    private boolean emittingEscapeCode = false;
-    private boolean inComment = false;
-    private boolean inQuotes = false;
-    private char lastChar = 0;
-    private char lastLastChar = 0;
-    private char quoteChar = 0;
-    private int bracesLevel = 0;
-    private int pos = 0;
-    private int sourceLength = 0;
+	// ~ Instance fields
+	// --------------------------------------------------------
 
-    /**
-     * Creates a new EscapeTokenizer object.
-     *
-     * @param s the string to tokenize
-     */
-    public EscapeTokenizer(String s) {
-        source = s;
-        sourceLength = s.length();
-        pos = 0;
-    }
+	private int bracesLevel = 0;
 
-    /**
-     * Does this tokenizer have more tokens available?
-     *
-     * @return if this tokenizer has more tokens available
-     */
-    public synchronized boolean hasMoreTokens() {
-        return (pos < sourceLength);
-    }
+	private boolean emittingEscapeCode = false;
 
-    /**
-     * Returns the next token
-     *
-     * @return the next token.
-     */
-    public synchronized String nextToken() {
-        StringBuffer tokenBuf = new StringBuffer();
+	private boolean inComment = false;
 
-        if (emittingEscapeCode) {
-            tokenBuf.append("{");
-            emittingEscapeCode = false;
-        }
+	private boolean inQuotes = false;
 
-        for (; pos < sourceLength; pos++) {
-            char c = source.charAt(pos);
+	private char lastChar = 0;
 
-            if (c == '\'') {
-                if (lastChar != '\\') {
-                    if (inQuotes) {
-                        if (quoteChar == c) {
-                            inQuotes = false;
-                        }
-                    } else {
-                        inQuotes = true;
-                        quoteChar = c;
-                    }
-                } else if (lastLastChar == '\\') {
-                    if (inQuotes) {
-                        if (quoteChar == c) {
-                            inQuotes = false;
-                        }
-                    } else {
-                        inQuotes = true;
-                        quoteChar = c;
-                    }
-                }
+	private char lastLastChar = 0;
 
-                tokenBuf.append(c);
-            } else if (c == '"') {
-                if ((lastChar != '\\') && (lastChar != '"')) {
-                    if (inQuotes) {
-                        if (quoteChar == c) {
-                            inQuotes = false;
-                        }
-                    } else {
-                        inQuotes = true;
-                        quoteChar = c;
-                    }
-                } else if (lastLastChar == '\\') {
-                    if (inQuotes) {
-                        if (quoteChar == c) {
-                            inQuotes = false;
-                        }
-                    } else {
-                        inQuotes = true;
-                        quoteChar = c;
-                    }
-                }
+	private int pos = 0;
 
-                tokenBuf.append(c);
-            } else if (c == '-') {
-                if ((lastChar == '-') && ((lastLastChar != '\\') & !inQuotes)) {
-                    inComment = true;
-                }
+	private char quoteChar = 0;
 
-                tokenBuf.append(c);
-            } else if ((c == '\n') || (c == '\r')) {
-                inComment = false;
+	private boolean sawVariableUse = false;
 
-                tokenBuf.append(c);
-            } else if (c == '{') {
-                if (inQuotes || inComment) {
-                    tokenBuf.append(c);
-                } else {
-                    bracesLevel++;
+	private String source = null;
 
-                    if (bracesLevel == 1) {
-                        pos++;
-                        emittingEscapeCode = true;
+	private int sourceLength = 0;
 
-                        return tokenBuf.toString();
-                    } else {
-                        tokenBuf.append(c);
-                    }
-                }
-            } else if (c == '}') {
-                tokenBuf.append(c);
+	// ~ Constructors
+	// -----------------------------------------------------------
 
-                if (!inQuotes && !inComment) {
-                    lastChar = c;
+	/**
+	 * Creates a new EscapeTokenizer object.
+	 * 
+	 * @param s
+	 *            the string to tokenize
+	 */
+	public EscapeTokenizer(String s) {
+		this.source = s;
+		this.sourceLength = s.length();
+		this.pos = 0;
+	}
 
-                    bracesLevel--;
+	// ~ Methods
+	// ----------------------------------------------------------------
 
-                    if (bracesLevel == 0) {
-                        pos++;
+	/**
+	 * Does this tokenizer have more tokens available?
+	 * 
+	 * @return if this tokenizer has more tokens available
+	 */
+	public synchronized boolean hasMoreTokens() {
+		return (this.pos < this.sourceLength);
+	}
 
-                        return tokenBuf.toString();
-                    }
-                }
-            } else {
-                tokenBuf.append(c);
-            }
+	/**
+	 * Returns the next token
+	 * 
+	 * @return the next token.
+	 */
+	public synchronized String nextToken() {
+		StringBuffer tokenBuf = new StringBuffer();
 
-            lastLastChar = lastChar;
-            lastChar = c;
-        }
+		if (this.emittingEscapeCode) {
+			tokenBuf.append("{"); //$NON-NLS-1$
+			this.emittingEscapeCode = false;
+		}
 
-        return tokenBuf.toString();
-    }
+		for (; this.pos < this.sourceLength; this.pos++) {
+			char c = this.source.charAt(this.pos);
+
+			// Detect variable usage
+
+			if (!this.inQuotes && c == '@') {
+				this.sawVariableUse = true;
+			}
+
+			if ((c == '\'' || c == '"') && !inComment) {
+				if (this.inQuotes && c == quoteChar) {
+					if (this.pos + 1 < this.sourceLength) {
+						if (this.source.charAt(this.pos + 1) == quoteChar) {
+							// Doubled-up quote escape, if the first quote isn't already escaped
+							if (this.lastChar != '\\') {
+								tokenBuf.append(quoteChar);
+								tokenBuf.append(quoteChar);
+								this.pos++;
+								continue;
+							}
+						}
+					}
+				}
+				if (this.lastChar != '\\') {
+					if (this.inQuotes) {
+						if (this.quoteChar == c) {
+							this.inQuotes = false;
+						}
+					} else {
+						this.inQuotes = true;
+						this.quoteChar = c;
+					}
+				} else if (this.lastLastChar == '\\') {
+					if (this.inQuotes) {
+						if (this.quoteChar == c) {
+							this.inQuotes = false;
+						}
+					} else {
+						this.inQuotes = true;
+						this.quoteChar = c;
+					}
+				}
+
+				tokenBuf.append(c);
+			} else if (c == '-') {
+				if ((this.lastChar == '-')
+						&& ((this.lastLastChar != '\\') && !this.inQuotes)) {
+					this.inComment = true;
+				}
+
+				tokenBuf.append(c);
+			} else if ((c == '\n') || (c == '\r')) {
+				this.inComment = false;
+
+				tokenBuf.append(c);
+			} else if (c == '{') {
+				if (this.inQuotes || this.inComment) {
+					tokenBuf.append(c);
+				} else {
+					this.bracesLevel++;
+
+					if (this.bracesLevel == 1) {
+						this.pos++;
+						this.emittingEscapeCode = true;
+
+						return tokenBuf.toString();
+					}
+
+					tokenBuf.append(c);
+				}
+			} else if (c == '}') {
+				tokenBuf.append(c);
+
+				if (!this.inQuotes && !this.inComment) {
+					this.lastChar = c;
+
+					this.bracesLevel--;
+
+					if (this.bracesLevel == 0) {
+						this.pos++;
+
+						return tokenBuf.toString();
+					}
+				}
+			} else {
+				tokenBuf.append(c);
+			}
+
+			this.lastLastChar = this.lastChar;
+			this.lastChar = c;
+		}
+
+		return tokenBuf.toString();
+	}
+
+	boolean sawVariableUse() {
+		return this.sawVariableUse;
+	}
 }
