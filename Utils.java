@@ -1,9 +1,9 @@
 /*
-WyldRyde-Logger Log Server - V1.2
+GeekShed-Logger Log Server - V1.4
 
 Utils Static Class File
 
-WyldRyde Will -NOT- Provide Support With This Code!
+GeekShed Will -NOT- Provide Support With This Code!
 
 Copyright (c) 2008 Phil Lavin
 All rights reserved.

@@ -1,9 +1,9 @@
 /*
-WyldRyde-Logger Log Server - V1.3
+GeekShed-Logger Log Server - V1.4
 
 Client Class File
 
-WyldRyde Will -NOT- Provide Support With This Code!
+GeekShed Will -NOT- Provide Support With This Code!
 
 Copyright (c) 2008 Phil Lavin
 All rights reserved.
@@ -40,7 +40,7 @@ import java.sql.*;
 // Client class
 public class Client {
 	// Statics
-	private static String VERSION = "1.3";
+	private static String VERSION = "1.4";
 
 	// Vars
 	private String remoteIP; // Link server IP
@@ -56,7 +56,6 @@ public class Client {
 	private HashMap<String, String> getInfoNick = new HashMap<String, String>(50); // Used to stop laggy servers confusing GETINFO parser
 	private MySQL mysql; // Mysql connection
 	private StringBuffer sendQ = new StringBuffer(); // SendQ
-	private int qSize = 0; // SendQ Size Counter
 
 	// Constructor
 	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, MySQL mysql) {
@@ -84,6 +83,8 @@ public class Client {
 		send("SERVER " + serverName + " 1 :" + serverDescription);
 		send("NICK Logger 1 " + System.currentTimeMillis() / 1000 + " logger " + serverName.toLowerCase() + " " + serverName + " 0 " + " +oANHSB * :Logger");
 		send(":" + serverName + " SWHOIS Logger :is a Network Service");
+
+		// This will be put in the send queue. Send it so we can continue.
 		sendSendQ();
 	}
 
@@ -112,7 +113,11 @@ public class Client {
 		// Last server connection process message - we're now connected fully
 		else if (tokens[0].equals("NETINFO")) {
 			connected = true;
+
+			// Clear what's left of the send queue.
 			sendSendQ();
+
+			// Join some channels
 			send(":Logger JOIN #serverbans");
 		}
 		// Handle new user NICK commands
@@ -317,25 +322,39 @@ public class Client {
 	// Method to send data to server
 	public void send(String data) {
 		if (this.connected) {
+			// Send to server
 			this.out.println(data);
-			System.out.println("-> " + data);
+
+			// Send to console
+			String[] dataSplit = data.split("\n");
+
+			for (String dataItem : dataSplit) {
+				System.out.println("-> " + dataItem);
+			}
 		}
 		else {
-			this.sendQ.append(data + "\n");
-			this.qSize++;
-
-			if (this.qSize == 10) {
+			// Send the sendQ if the next append will make it too long
+			if (this.sendQ.length() + data.length() >= 511) {
 				this.sendSendQ();
 			}
+
+			this.sendQ.append(data + "\n");
 		}
 	}
 
 	// Method to send the SendQ to server
 	public void sendSendQ() {
+		// Send to server
 		this.out.println(this.sendQ.toString());
-		System.out.println("-> " + this.sendQ.toString());
 
-		this.qSize = 0;
+		// Send to console
+		String[] dataSplit = this.sendQ.toString().split("\n");
+
+		for (String dataItem : dataSplit) {
+			System.out.println("-> " + dataItem);
+		}
+
+		// Reset queue
 		this.sendQ = new StringBuffer();
 	}
 

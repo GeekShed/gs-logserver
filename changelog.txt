@@ -1,4 +1,9 @@
+[Version 1.4]
+
+Less dumb SendQ handling
+
 [Version 1.3]
+
 A MySQL class waits for the MySQL server to return, after it goes away, and reconnects
 
 [Version 1.2]
