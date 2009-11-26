@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PATH='/usr/local/bin:/usr/bin:/bin:/usr/games:/usr/lib/jvm/java-6-sun-1.6.0.07/bin'
-dir='/home/unreal/wyldryde-logserver'
+dir='/home/unreal/gs-logserver'
 
 if [ `ps ux | grep -v 'grep' | grep -ci 'java logserver'` -eq 0 ] ; then
 	cd $dir
