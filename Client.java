@@ -197,7 +197,7 @@ public class Client {
 		if (connected) {
 			// Handle VERSION
 			if (tokens[1].equals("VERSION")) {
-				send(":" + this.serverName + " 351 " + tokens[0].substring(1) + " WyldRyde Log Server " + this.VERSION);
+				send(":" + this.serverName + " 351 " + tokens[0].substring(1) + " GeekShed Log Server " + this.VERSION);
 			}
 			// Handle QUITs
 			else if (tokens[1].equals("QUIT")) {
