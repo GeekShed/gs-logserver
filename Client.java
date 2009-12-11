@@ -43,8 +43,8 @@ public class Client {
 	private static String VERSION = "1.4";
 
 	// Vars
-	private String remoteIP; // Link server IP
-	private int remotePort; // Link server port
+	private String remoteIP, localIP; // Link server IP
+	private int remotePort, localPort; // Link server port
 	private String remotePass; // Link server password
 	private String serverName; // This server name
 	private String serverDescription; // This server description
@@ -58,10 +58,12 @@ public class Client {
 	private StringBuffer sendQ = new StringBuffer(); // SendQ
 
 	// Constructor
-	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, MySQL mysql) {
+	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, String localIP, int localPort, MySQL mysql) {
 		// Remember data
 		this.remoteIP = remoteIP;
 		this.remotePort = remotePort;
+		this.localIP = localIP;
+		this.localPort = localPort;
 		this.remotePass = remotePass;
 		this.serverName = serverName;
 		this.serverDescription = serverDescription;
@@ -71,7 +73,7 @@ public class Client {
 	// Method to connect to the link server
 	public void connect() throws Exception {
 		// Create socket
-		sock = new Socket(remoteIP, remotePort);
+		sock = new Socket(remoteIP, remotePort, InetAddress.getByName(localIP), localPort);
 
 		// Create reader and writer
 		in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
