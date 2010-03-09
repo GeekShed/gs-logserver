@@ -1,23 +1,26 @@
 /*
  Copyright  2002-2007 MySQL AB, 2008 Sun Microsystems
+ All rights reserved. Use is subject to license terms.
 
- This program is free software; you can redistribute it and/or modify
- it under the terms of version 2 of the GNU General Public License as 
- published by the Free Software Foundation.
+  The MySQL Connector/J is licensed under the terms of the GPL,
+  like most MySQL Connectors. There are special exceptions to the
+  terms and conditions of the GPL as it is applied to this software,
+  see the FLOSS License Exception available on mysql.com.
 
- There are special exceptions to the terms and conditions of the GPL 
- as it is applied to this software. View the full text of the 
- exception in file EXCEPTIONS-CONNECTOR-J in the directory of this 
- software distribution.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; version 2 of the
+  License.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,  
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+  02110-1301 USA
 
  */
 
@@ -1232,6 +1235,10 @@ public class ConnectionPropertiesImpl implements Serializable, ConnectionPropert
 			Messages.getString("ConnectionProperties.queriesBeforeRetryMaster"), //$NON-NLS-1$
 			"3.0.2", HA_CATEGORY, 7); //$NON-NLS-1$
 
+	private BooleanConnectionProperty queryTimeoutKillsConnection = new BooleanConnectionProperty(
+			"queryTimeoutKillsConnection", false, 
+			Messages.getString("ConnectionProperties.queryTimeoutKillsConnection"), "5.1.9", MISC_CATEGORY, Integer.MIN_VALUE);
+			
 	private BooleanConnectionProperty reconnectAtTxEnd = new BooleanConnectionProperty(
 			"reconnectAtTxEnd", false, //$NON-NLS-1$
 			Messages.getString("ConnectionProperties.reconnectAtTxEnd"), "3.0.10", //$NON-NLS-1$ //$NON-NLS-2$
@@ -4470,4 +4477,11 @@ public class ConnectionPropertiesImpl implements Serializable, ConnectionPropert
 		return this.maxAllowedPacket.getValueAsInt();
 	}
 
+	public boolean getQueryTimeoutKillsConnection() {
+		return this.queryTimeoutKillsConnection.getValueAsBoolean();
+	}
+
+	public void setQueryTimeoutKillsConnection(boolean queryTimeoutKillsConnection) {
+		this.queryTimeoutKillsConnection.setValue(queryTimeoutKillsConnection);
+	}
 }

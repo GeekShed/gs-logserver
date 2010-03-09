@@ -1,5 +1,6 @@
 /*
  Copyright  2002-2007 MySQL AB, 2008 Sun Microsystems
+ All rights reserved. Use is subject to license terms.
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of version 2 of the GNU General Public License as
@@ -505,6 +506,8 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 	public void initializeWithMetadata() throws SQLException {
 		this.rowData.setMetadata(this.fields);
 		
+		this.columnToIndexCache = new HashMap();
+		
 		if (this.profileSql || this.connection.getUseUsageAdvisor()) {
 			this.columnUsed = new boolean[this.fields.length];
 			this.pointOfOrigin = new Throwable();
@@ -729,8 +732,6 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 		this.columnLabelToIndex = new TreeMap(String.CASE_INSENSITIVE_ORDER);
 		this.fullColumnNameToIndex = new TreeMap(String.CASE_INSENSITIVE_ORDER);
 		this.columnNameToIndex = new TreeMap(String.CASE_INSENSITIVE_ORDER);
-		this.columnToIndexCache = new HashMap();
-		
 		
 		// We do this in reverse order, so that the 'first' column
 		// with a given name ends up as the final mapping in the
@@ -1945,6 +1946,26 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 		return null;
 	}
 
+	public int getBytesSize() throws SQLException {
+		RowData localRowData = this.rowData;
+		
+		checkClosed();
+		
+		if (localRowData instanceof RowDataStatic) {
+			int bytesSize = 0;
+			
+			int numRows = localRowData.size();
+
+			for (int i = 0; i < numRows; i++) {
+				bytesSize += localRowData.getAt(i).getBytesSize();
+			}
+
+			return bytesSize;
+		}
+		
+		return -1;
+	}
+	
 	/**
 	 * Optimization to only use one calendar per-session, or calculate it for
 	 * each call, depending on user configuration
@@ -2146,8 +2167,7 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 	public java.sql.Date getDate(int columnIndex, Calendar cal)
 			throws SQLException {
 		if (this.isBinaryEncoded) {
-			return getNativeDate(columnIndex, (cal != null) ? cal.getTimeZone()
-					: this.getDefaultTimeZone());
+			return getNativeDate(columnIndex, cal);
 		}
 
 		if (!this.useFastDateParsing) {
@@ -3793,6 +3813,28 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 
 			}
 
+			if (this.connection.getNoDatetimeStringSync()) {
+				byte[] asBytes = getNativeBytes(columnIndex, true);
+				
+				if (asBytes == null) {
+					return null;
+				}
+				
+				if (asBytes.length == 0 /* newer versions of the server 
+					seem to do this when they see all-zero datetime data */) {
+					return "0000-00-00";
+				}
+				
+				int year = (asBytes[0] & 0xff)
+				| ((asBytes[1] & 0xff) << 8);
+				int month = asBytes[2];
+				int day = asBytes[3];
+				
+				if (year == 0 && month == 0 && day == 0) {
+					return "0000-00-00";
+				}
+			}
+			
 			Date dt = getNativeDate(columnIndex);
 
 			if (dt == null) {
@@ -3811,6 +3853,28 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 			return String.valueOf(tm);
 
 		case Types.TIMESTAMP:
+			if (this.connection.getNoDatetimeStringSync()) {
+				byte[] asBytes = getNativeBytes(columnIndex, true);
+				
+				if (asBytes == null) {
+					return null;
+				}
+				
+				if (asBytes.length == 0 /* newer versions of the server 
+					seem to do this when they see all-zero datetime data */) {
+					return "0000-00-00 00:00:00";
+				}
+				
+				int year = (asBytes[0] & 0xff)
+				| ((asBytes[1] & 0xff) << 8);
+				int month = asBytes[2];
+				int day = asBytes[3];
+				
+				if (year == 0 && month == 0 && day == 0) {
+					return "0000-00-00 00:00:00";
+				}
+			}
+			
 			Timestamp tstamp = getNativeTimestamp(columnIndex,
 					null, this.defaultTimeZone, false);
 
@@ -3864,7 +3928,7 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 	 * @exception SQLException
 	 *                if a database-access error occurs.
 	 */
-	protected java.sql.Date getNativeDate(int columnIndex, TimeZone tz)
+	protected java.sql.Date getNativeDate(int columnIndex, Calendar cal)
 			throws SQLException {
 		checkRowPos();
 		checkColumnBounds(columnIndex);
@@ -3878,9 +3942,11 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 		if (mysqlType == MysqlDefs.FIELD_TYPE_DATE) {
 
 			dateToReturn = this.thisRow.getNativeDate(columnIndexMinusOne, 
-					this.connection, this);	
+					this.connection, this, cal);	
 		} else {
-
+			TimeZone tz = (cal != null) ? cal.getTimeZone()
+					: this.getDefaultTimeZone();
+			
 			boolean rollForward = (tz != null && !tz.equals(this.getDefaultTimeZone()));
 			
 			dateToReturn = (Date) this.thisRow.getNativeDateTimeValue(columnIndexMinusOne,
@@ -4566,8 +4632,11 @@ public class ResultSetImpl implements ResultSetInternalMethods {
 
 		// TODO: Check Types Here.
 		stringVal = getNativeConvertToString(columnIndex, field);
-
-		if (field.isZeroFill() && (stringVal != null)) {
+		int mysqlType = field.getMysqlType();
+		
+		if (mysqlType != MysqlDefs.FIELD_TYPE_TIMESTAMP && 
+				mysqlType != MysqlDefs.FIELD_TYPE_DATE && 
+				field.isZeroFill() && (stringVal != null)) {
 			int origLength = stringVal.length();
 
 			StringBuffer zeroFillBuf = new StringBuffer(origLength);

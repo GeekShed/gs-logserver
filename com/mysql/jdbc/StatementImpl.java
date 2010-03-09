@@ -1,5 +1,6 @@
 /*
  Copyright  2002-2007 MySQL AB, 2008-2009 Sun Microsystems
+ All rights reserved. Use is subject to license terms.
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of version 2 of the GNU General Public License as
@@ -89,40 +90,53 @@ public class StatementImpl implements Statement {
 			Thread cancelThread = new Thread() {
 
 				public void run() {
-					Connection cancelConn = null;
-					java.sql.Statement cancelStmt = null;
-
-					try {
-						synchronized (cancelTimeoutMutex) {
-							cancelConn = connection.duplicate();
-							cancelStmt = cancelConn.createStatement();
-							cancelStmt.execute("KILL QUERY " + connectionId);
+					if (connection.getQueryTimeoutKillsConnection()) {
+						try {
 							toCancel.wasCancelled = true;
 							toCancel.wasCancelledByTimeout = true;
+							connection.realClose(false, false, true, 
+									new MySQLStatementCancelledException(Messages.getString("Statement.ConnectionKilledDueToTimeout")));
+						} catch (NullPointerException npe) {
+							// not worth guarding against
+						} catch (SQLException sqlEx) {
+							caughtWhileCancelling = sqlEx;
 						}
-					} catch (SQLException sqlEx) {
-						caughtWhileCancelling = sqlEx;
-					} catch (NullPointerException npe) {
-						// Case when connection closed while starting to cancel
-						// We can't easily synchronize this, because then one thread
-						// can't cancel() a running query
-
-						// ignore, we shouldn't re-throw this, because the connection's
-						// already closed, so the statement has been timed out.
-					} finally {
-						if (cancelStmt != null) {
-							try {
-								cancelStmt.close();
-							} catch (SQLException sqlEx) {
-								throw new RuntimeException(sqlEx.toString());
+					} else {
+						Connection cancelConn = null;
+						java.sql.Statement cancelStmt = null;
+	
+						try {
+							synchronized (cancelTimeoutMutex) {
+								cancelConn = connection.duplicate();
+								cancelStmt = cancelConn.createStatement();
+								cancelStmt.execute("KILL QUERY " + connectionId);
+								toCancel.wasCancelled = true;
+								toCancel.wasCancelledByTimeout = true;
 							}
-						}
-
-						if (cancelConn != null) {
-							try {
-								cancelConn.close();
-							} catch (SQLException sqlEx) {
-								throw new RuntimeException(sqlEx.toString());
+						} catch (SQLException sqlEx) {
+							caughtWhileCancelling = sqlEx;
+						} catch (NullPointerException npe) {
+							// Case when connection closed while starting to cancel
+							// We can't easily synchronize this, because then one thread
+							// can't cancel() a running query
+	
+							// ignore, we shouldn't re-throw this, because the connection's
+							// already closed, so the statement has been timed out.
+						} finally {
+							if (cancelStmt != null) {
+								try {
+									cancelStmt.close();
+								} catch (SQLException sqlEx) {
+									throw new RuntimeException(sqlEx.toString());
+								}
+							}
+	
+							if (cancelConn != null) {
+								try {
+									cancelConn.close();
+								} catch (SQLException sqlEx) {
+									throw new RuntimeException(sqlEx.toString());
+								}
 							}
 						}
 					}
@@ -710,7 +724,7 @@ public class StatementImpl implements Statement {
 							this.timeoutInMillis != 0
 							&& locallyScopedConn.versionMeetsMinimum(5, 0, 0)) {
 						timeoutTask = new CancelTask(this);
-						ConnectionImpl.getCancelTimer().schedule(timeoutTask,
+						locallyScopedConn.getCancelTimer().schedule(timeoutTask,
 								this.timeoutInMillis);
 					}
 
@@ -1003,7 +1017,7 @@ public class StatementImpl implements Statement {
 							individualStatementTimeout != 0
 							&& locallyScopedConn.versionMeetsMinimum(5, 0, 0)) {
 						timeoutTask = new CancelTask(this);
-						ConnectionImpl.getCancelTimer().schedule(timeoutTask,
+						locallyScopedConn.getCancelTimer().schedule(timeoutTask,
 								individualStatementTimeout);
 					}
 					
@@ -1139,7 +1153,7 @@ public class StatementImpl implements Statement {
 					individualStatementTimeout != 0
 					&& locallyScopedConn.versionMeetsMinimum(5, 0, 0)) {
 				timeoutTask = new CancelTask((StatementImpl)batchStmt);
-				ConnectionImpl.getCancelTimer().schedule(timeoutTask,
+				locallyScopedConn.getCancelTimer().schedule(timeoutTask,
 						individualStatementTimeout);
 			}
 			
@@ -1394,7 +1408,7 @@ public class StatementImpl implements Statement {
 						this.timeoutInMillis != 0
 						&& locallyScopedConn.versionMeetsMinimum(5, 0, 0)) {
 					timeoutTask = new CancelTask(this);
-					ConnectionImpl.getCancelTimer().schedule(timeoutTask,
+					locallyScopedConn.getCancelTimer().schedule(timeoutTask,
 							this.timeoutInMillis);
 				}
 
@@ -1614,7 +1628,7 @@ public class StatementImpl implements Statement {
 						this.timeoutInMillis != 0
 						&& locallyScopedConn.versionMeetsMinimum(5, 0, 0)) {
 					timeoutTask = new CancelTask(this);
-					ConnectionImpl.getCancelTimer().schedule(timeoutTask,
+					locallyScopedConn.getCancelTimer().schedule(timeoutTask,
 							this.timeoutInMillis);
 				}
 

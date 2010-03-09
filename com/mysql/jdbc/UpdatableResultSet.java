@@ -1,5 +1,6 @@
 /*
  Copyright  2002-2007 MySQL AB, 2008 Sun Microsystems
+ All rights reserved. Use is subject to license terms.
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of version 2 of the GNU General Public License as
@@ -26,6 +27,7 @@ package com.mysql.jdbc;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -95,6 +97,7 @@ public class UpdatableResultSet extends ResultSetImpl {
 	private boolean populateInserterWithDefaultValues = false;
 
 	private Map databasesUsedToTablesUsed = null;
+	
 
 	/**
 	 * Creates a new ResultSet object.
@@ -478,38 +481,82 @@ public class UpdatableResultSet extends ResultSetImpl {
 			characterEncoding = this.connection.getEncoding();
 		}
 
-		//
-		// FIXME: Use internal routines where possible for character
-		// conversion!
-		try {
-			int numKeys = this.primaryKeyIndicies.size();
+		int numKeys = this.primaryKeyIndicies.size();
 
-			if (numKeys == 1) {
-				int index = ((Integer) this.primaryKeyIndicies.get(0))
+		if (numKeys == 1) {
+			int index = ((Integer) this.primaryKeyIndicies.get(0))
+					.intValue();
+			this.setParamValue(this.deleter, 1, this.thisRow, 
+					index, this.fields[index].getSQLType());
+		} else {
+			for (int i = 0; i < numKeys; i++) {
+				int index = ((Integer) this.primaryKeyIndicies.get(i))
 						.intValue();
-				String currentVal = ((characterEncoding == null) ? new String(
-						(byte[]) this.thisRow.getColumnValue(index)) : new String(
-						(byte[]) this.thisRow.getColumnValue(index), characterEncoding));
-				this.deleter.setString(1, currentVal);
-			} else {
-				for (int i = 0; i < numKeys; i++) {
-					int index = ((Integer) this.primaryKeyIndicies.get(i))
-							.intValue();
-					String currentVal = ((characterEncoding == null) ? new String(
-							(byte[]) this.thisRow.getColumnValue(index))
-							: new String((byte[]) this.thisRow.getColumnValue(index),
-									characterEncoding));
-					this.deleter.setString(i + 1, currentVal);
-				}
-			}
+				this.setParamValue(this.deleter, i + 1, this.thisRow, 
+						index, this.fields[index].getSQLType());
 
-			this.deleter.executeUpdate();
-			this.rowData.removeRow(this.rowData.getCurrentRowNumber());
-		} catch (java.io.UnsupportedEncodingException encodingEx) {
-			throw SQLError.createSQLException(Messages.getString("UpdatableResultSet.39", //$NON-NLS-1$
-					new Object[] { this.charEncoding }) //$NON-NLS-1$
-					, SQLError.SQL_STATE_ILLEGAL_ARGUMENT, getExceptionInterceptor()); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 		}
+
+		this.deleter.executeUpdate();
+		this.rowData.removeRow(this.rowData.getCurrentRowNumber());
+		
+		// position on previous row - Bug#27431
+		previous();
+		
+	}
+	
+	private synchronized void setParamValue(PreparedStatement ps, int psIdx,
+			ResultSetRow row, int rsIdx, int sqlType) throws SQLException {
+		
+		byte[] val = row.getColumnValue(rsIdx);
+		if(val == null){
+			ps.setNull(psIdx, Types.NULL);
+			return;
+		}
+		switch (sqlType) {
+			case Types.NULL:
+				ps.setNull(psIdx, Types.NULL);
+				break;
+			case Types.TINYINT:
+			case Types.SMALLINT:
+			case Types.INTEGER:
+				ps.setInt(psIdx, row.getInt(rsIdx));
+				break;
+			case Types.BIGINT:
+				ps.setLong(psIdx, row.getLong(rsIdx));
+				break;
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				ps.setString(psIdx, row.getString(rsIdx, this.charEncoding, this.connection));
+				break;
+			case Types.DATE:
+				ps.setDate(psIdx, row.getDateFast(rsIdx, this.connection, this, this.fastDateCal), this.fastDateCal);
+				break;
+			case Types.TIMESTAMP:
+				ps.setTimestamp(psIdx, row.getTimestampFast(rsIdx, this.fastDateCal, this.defaultTimeZone, false, this.connection, this));
+				break;
+			case Types.TIME:
+				ps.setTime(psIdx, row.getTimeFast(rsIdx, this.fastDateCal, this.defaultTimeZone, false, this.connection, this));
+				break;
+			case Types.FLOAT:
+			case Types.DOUBLE:
+			case Types.REAL:
+			case Types.BOOLEAN:
+				ps.setBytesNoEscapeNoQuotes(psIdx, val);
+				break;
+			/* default, but also explicitly for following types: 
+			case Types.BINARY:
+			case Types.BLOB:
+			*/
+			default:
+				ps.setBytes(psIdx, val);
+				break;
+		}
+		
 	}
 
 	private synchronized void extractDefaultValues() throws SQLException {
@@ -722,7 +769,7 @@ public class UpdatableResultSet extends ResultSetImpl {
             fqcnBuf.append(quotedId);
 
             String qualifiedColumnName = fqcnBuf.toString();
-
+            
 			if (this.fields[i].isPrimaryKey()) {
 				this.primaryKeyIndicies.add(Constants.integerValueOf(i));
 
@@ -1513,19 +1560,13 @@ public class UpdatableResultSet extends ResultSetImpl {
 
 		if (numKeys == 1) {
 			int index = ((Integer) this.primaryKeyIndicies.get(0)).intValue();
-			byte[] keyData = (byte[]) this.thisRow.getColumnValue(index);
-			this.updater.setBytes(numFields + 1, keyData, false, false);
+			this.setParamValue(this.updater, numFields + 1, this.thisRow, index , 
+					this.fields[index].getSQLType());
 		} else {
 			for (int i = 0; i < numKeys; i++) {
-				byte[] currentVal = (byte[]) this.thisRow.getColumnValue(((Integer) this.primaryKeyIndicies
-						.get(i)).intValue());
-
-				if (currentVal != null) {
-					this.updater.setBytes(numFields + i + 1, currentVal, false,
-							false);
-				} else {
-					this.updater.setNull(numFields + i + 1, 0);
-				}
+				int idx = ((Integer)this.primaryKeyIndicies.get(i)).intValue();
+				this.setParamValue(this.updater, numFields + i + 1, this.thisRow, 
+						idx , this.fields[idx].getSQLType());
 			}
 		}
 	}
