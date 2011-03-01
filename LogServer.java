@@ -47,6 +47,7 @@ public class LogServer {
 
 		// MySQL Connection
 		// Syntax: <server>, <port>, <database>, <username>, <password>
+		System.out.println(options.get("mysql-host") + " " + options.get("mysql-port") + " " + options.get("mysql-database") + " " + options.get("mysql-user") + " " + options.get("mysql-password"));
 		con = new MySQL(options.get("mysql-host"), Integer.parseInt(options.get("mysql-port")), options.get("mysql-database"), options.get("mysql-user"), options.get("mysql-password"));
 
 		// Create new instance of client server

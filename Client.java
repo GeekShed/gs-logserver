@@ -56,6 +56,7 @@ public class Client {
 	private HashMap<String, String> getInfoNick = new HashMap<String, String>(50); // Used to stop laggy servers confusing GETINFO parser
 	private MySQL mysql; // Mysql connection
 	private StringBuffer sendQ = new StringBuffer(); // SendQ
+	private boolean clientIntroduced = false;
 
 	// Constructor
 	public Client(String remoteIP, int remotePort, String serverName, String serverDescription, String remotePass, String localIP, int localPort, MySQL mysql) {
@@ -83,8 +84,6 @@ public class Client {
 		send("PROTOCTL NICKv2");
 		send("PASS " + this.remotePass);
 		send("SERVER " + serverName + " 1 :" + serverDescription);
-		send("NICK Logger 1 " + System.currentTimeMillis() / 1000 + " logger " + serverName.toLowerCase() + " " + serverName + " 0 " + " +oANHSB * :Logger");
-		send(":" + serverName + " SWHOIS Logger :is a Network Service");
 
 		// This will be put in the send queue. Send it so we can continue.
 		sendSendQ();
@@ -119,6 +118,14 @@ public class Client {
 			// Clear what's left of the send queue.
 			sendSendQ();
 
+			// Check if we have a client, introduce if not
+			if (!this.clientIntroduced) {
+				send("NICK Logger 1 " + System.currentTimeMillis() / 1000 + " logger " + serverName.toLowerCase() + " " + serverName + " 0" + " +oANHSBr * :Logger");
+				send(":" + serverName + " SWHOIS Logger :is a Network Service");
+
+				this.clientIntroduced = true;
+			}
+
 			// Join some channels
 			send(":Logger JOIN #serverbans");
 		}
@@ -138,6 +145,14 @@ public class Client {
 
 			// Add object to vector
 			Users.add(u);
+
+			// Check if we have a client, introduce if not
+			if (!this.clientIntroduced) {
+				send("NICK Logger 1 " + System.currentTimeMillis() / 1000 + " logger " + serverName.toLowerCase() + " " + serverName + " 0" + " +oANHSBr * :Logger");
+				send(":" + serverName + " SWHOIS Logger :is a Network Service");
+
+				this.clientIntroduced = true;
+			}
 
 			// Get info on the user from pseudo-admin
 			send(":Logger GETINFO " + tokens[1] + " " + tokens[1]);
